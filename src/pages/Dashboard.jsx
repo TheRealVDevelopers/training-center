@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [session, setSession] = useState(null)
   const [bookings, setBookings] = useState([])
   const [txns, setTxns] = useState([])
-  const [guestMode, setGuestMode] = useState(null) // 'self_guest' | 'guest' | null
+  const [guestMode, setGuestMode] = useState(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -33,11 +33,23 @@ export default function Dashboard() {
   const fee = session?.feePerPerson ?? 0
   const balance = member.balance || 0
   const reserved = member.reserved || 0
-  const available = balance - reserved // spendable: wallet minus active-booking holds
+  const available = balance - reserved
   const guestsBooked = bookings
     .filter((b) => b.sessionId === session?.id && b.status !== 'cancelled')
     .reduce((n, b) => n + (b.people?.filter((p) => p.isGuest).length || 0), 0)
   const guestsLeft = MAX_GUESTS_PER_SESSION - guestsBooked
+
+  // Membership-card facts
+  const sessionsBookable = fee ? Math.floor(available / fee) : 0
+  const attended = bookings.filter((b) => b.status === 'checked_in').length
+  const guestsBrought = bookings
+    .filter((b) => b.status === 'checked_in')
+    .reduce((n, b) => n + (b.people?.filter((p) => p.isGuest).length || 0), 0)
+  const toppedUp = txns.filter((t) => t.type === 'topup').reduce((n, t) => n + t.amount, 0)
+  const memberSince = member.createdAt?.seconds
+    ? new Date(member.createdAt.seconds * 1000).toLocaleDateString([], { month: 'short', year: 'numeric' })
+    : null
+  const memberId = (member.id || '').slice(-5).toUpperCase()
 
   async function book(type, guest) {
     setErr('')
@@ -84,34 +96,49 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Balance + cost */}
-      <div className="card hero">
-        <div className="row between">
-          <div>
-            <div className="muted small">Current balance</div>
-            <div className="balance">{CURRENCY}<CountUp value={balance} /></div>
+      {/* Membership card */}
+      <section className="hero memcard">
+        <div className="memcard-top">
+          <div className="memcard-id">
+            {member.photoURL
+              ? <img src={member.photoURL} alt="" />
+              : <span className="avatar-fallback">{(member.name || '?')[0]}</span>}
+            <div>
+              <div className="memcard-name">{member.name}</div>
+              <div className="memcard-role">Saturday Training · Member</div>
+            </div>
           </div>
-          <div className="right">
-            <div className="muted small">Per-person fee</div>
-            <div className="fee">{CURRENCY}{fee}</div>
-            <div className="muted small">deducted at check-in</div>
-          </div>
+          <span className="memcard-chip">MEMBER</span>
         </div>
-        {reserved > 0 && (
-          <div className="row between" style={{ marginTop: 10 }}>
-            <span className="muted small">On hold ({CURRENCY}{reserved}) · Available to book</span>
-            <span className="strong">{CURRENCY}{available}</span>
-          </div>
-        )}
-        <BalancePreview balance={balance} fee={fee} />
-      </div>
 
-      {!session && (
-        <div className="banner warn">No active session right now. Ask the admin to start one.</div>
-      )}
+        <div>
+          <div className="muted small">Current balance</div>
+          <div className="balance">{CURRENCY}<CountUp value={balance} /></div>
+        </div>
+
+        <div className="memcard-facts">
+          <div><span className="f-val">{Math.max(0, sessionsBookable)}</span><span className="f-lbl">sessions to book</span></div>
+          <div><span className="f-val">{CURRENCY}{reserved}</span><span className="f-lbl">on hold</span></div>
+          <div><span className="f-val">{fee ? `${CURRENCY}${fee}` : '—'}</span><span className="f-lbl">per session</span></div>
+        </div>
+
+        <div className="memcard-foot">
+          <span>•••• {memberId || '00000'}</span>
+          <span>{memberSince ? `SINCE ${memberSince.toUpperCase()}` : ''}</span>
+        </div>
+      </section>
+
+      {/* Quick stats */}
+      <section className="mstats">
+        <div className="mstat"><div className="mstat-val"><CountUp value={attended} /></div><div className="mstat-lbl">Sessions attended</div></div>
+        <div className="mstat"><div className="mstat-val"><CountUp value={guestsBrought} /></div><div className="mstat-lbl">Guests brought</div></div>
+        <div className="mstat"><div className="mstat-val">{CURRENCY}<CountUp value={toppedUp} /></div><div className="mstat-lbl">Total topped up</div></div>
+      </section>
+
+      {!session && <div className="banner warn">No active session right now. Ask the admin to start one.</div>}
       {err && <div className="error">{err}</div>}
 
-      {/* Three booking actions */}
+      <h3 className="section-h">Book your Saturday slot</h3>
       <div className="actions">
         <button className="action-card primary" disabled={!session || busy || available < fee} onClick={() => book('self')}>
           <span className="action-ico">🙋</span>
@@ -138,19 +165,19 @@ export default function Dashboard() {
           <span className="chev">›</span>
         </button>
       </div>
-      {session && guestsBooked > 0 && (
-        <div className="muted small center-text">
-          Guests left this session: {Math.max(0, guestsLeft)} of {MAX_GUESTS_PER_SESSION}
+      {session && available < fee && (
+        <div className="topup-note">
+          <span>💳</span> You have {CURRENCY}{available} available — top up at the front desk to book a session.
         </div>
       )}
-      {session && available < fee && (
-        <div className="muted small center-text">Top up your balance to book (ask the admin / front desk).</div>
+      {session && guestsBooked > 0 && (
+        <div className="muted small center-text">Guests left this session: {Math.max(0, guestsLeft)} of {MAX_GUESTS_PER_SESSION}</div>
       )}
 
-      {/* Pending bookings (active QRs) */}
+      {/* Active bookings */}
       {pending.length > 0 && (
         <div className="card">
-          <h3>Active bookings</h3>
+          <h3>Your QR passes</h3>
           {pending.map((b) => (
             <Link key={b.id} to={`/booking/${b.id}`} className="row between listrow">
               <span>{labelFor(b)} · {b.peopleCount} {b.peopleCount > 1 ? 'people' : 'person'}</span>
@@ -160,27 +187,31 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* History */}
+      {/* Activity */}
       <div className="card">
-        <h3>History</h3>
-        {txns.length === 0 && (
+        <div className="row between"><h3 style={{ margin: 0 }}>Activity</h3><span className="muted small">{txns.length} {txns.length === 1 ? 'entry' : 'entries'}</span></div>
+        {txns.length === 0 ? (
           <div className="empty">
             <span className="ico">💳</span>
             <div className="t">No activity yet</div>
             <div className="small">Top-ups and check-ins show up here.</div>
           </div>
-        )}
-        {txns.map((t) => (
-          <div key={t.id} className="row between listrow">
-            <span>
-              <span className={`dot ${t.amount >= 0 ? 'pos' : 'neg'}`} />
-              {t.note}
-            </span>
-            <span className={t.amount >= 0 ? 'pos' : 'neg'}>
-              {t.amount >= 0 ? '+' : '−'}{CURRENCY}{Math.abs(t.amount)}
-            </span>
+        ) : (
+          <div style={{ marginTop: 12 }}>
+            {txns.map((t) => (
+              <div key={t.id} className="hist-row">
+                <span className={`hist-ico ${t.type === 'topup' ? 'in' : 'out'}`}>{t.type === 'topup' ? '💳' : '🎟️'}</span>
+                <div className="hist-body">
+                  <div className="hist-title">{t.note}</div>
+                  <div className="muted small">{fmtDate(t.createdAt)}</div>
+                </div>
+                <div className={`hist-amt ${t.amount >= 0 ? 'pos' : 'neg'}`}>
+                  {t.amount >= 0 ? '+' : '−'}{CURRENCY}{Math.abs(t.amount)}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       {guestMode && (
@@ -201,20 +232,8 @@ function labelFor(b) {
   return 'Myself + Guest'
 }
 
-function BalancePreview({ balance, fee }) {
-  if (!fee) return null
-  const remaining = balance - fee
-  return (
-    <div className="preview">
-      <div><span className="muted small">After a 1-person check-in</span></div>
-      <div className="row between">
-        <span>Deduct</span>
-        <span className="neg">−{CURRENCY}{fee}</span>
-      </div>
-      <div className="row between strong">
-        <span>Remaining</span>
-        <span className={remaining < 0 ? 'neg' : ''}>{CURRENCY}{remaining}</span>
-      </div>
-    </div>
-  )
+function fmtDate(ts) {
+  if (!ts?.seconds) return 'just now'
+  const d = new Date(ts.seconds * 1000)
+  return `${d.toLocaleDateString([], { day: 'numeric', month: 'short' })} · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
 }
