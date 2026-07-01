@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// ⚠️ PROTOTYPE RULES — permissive on purpose so the open /scan page (no login)
+// can read bookings and run check-in writes. Do NOT ship this to production.
+// Before any real launch, lock these down: members read/write only their own
+// doc, bookings created only by the owner, balance/transactions writes moved
+// behind a Cloud Function or admin-only check, and /scan put behind a volunteer
+// login or a signed token.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
