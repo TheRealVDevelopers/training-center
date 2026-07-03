@@ -167,17 +167,21 @@ def main():
     print(" (Ctrl+C to quit.  Run with --debug to see every read.)")
     print("=" * 52 + "\n")
 
-    last, last_t = None, 0.0
+    last, misses = None, 0
     while True:
         uid = read_uid(dll, verbose=debug)
         if uid:
-            now = time.time()
-            if uid != last or now - last_t > 2.0:
+            misses = 0
+            if uid != last:  # only fire once per physical tap
                 print("  card %s  ->  sent" % uid)
                 type_string(uid)
-                last, last_t = uid, now
-            time.sleep(0.4)
-        time.sleep(0.15)
+                last = uid
+            time.sleep(0.2)
+        else:
+            misses += 1
+            if misses >= 4:
+                last = None  # card lifted off the reader; a re-tap counts again
+            time.sleep(0.12)
 
 
 if __name__ == "__main__":
