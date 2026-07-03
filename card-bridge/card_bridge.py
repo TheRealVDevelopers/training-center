@@ -111,6 +111,16 @@ def type_string(s):
     _key_vk(VK_RETURN)
 
 
+def minimize_console():
+    """Get this terminal out of the way so it stops stealing keyboard focus."""
+    try:
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
+    except Exception:
+        pass
+
+
 # ---- card reading ---------------------------------------------------------
 def to_hex(buf, n):
     return "".join("%02X" % buf[i] for i in range(n))
@@ -161,11 +171,16 @@ def main():
 
     debug = "--debug" in sys.argv
     print("\n" + "=" * 52)
-    print(" Card bridge running.  Tap a card to check someone in.")
-    print(" >> Click your /scan page first so it's the FOCUSED window,")
-    print("    otherwise the card ID types into this terminal instead.")
-    print(" (Ctrl+C to quit.  Run with --debug to see every read.)")
+    print(" Card bridge running.")
+    print(" This window will MINIMIZE itself now — that's normal.")
+    print(" Keep your browser (/card page) open and in front.")
+    print(" Each tap types the card into whichever window is focused,")
+    print(" so the browser must be the front window.")
+    print(" (Ctrl+C to quit.  Run with --debug to keep this visible.)")
     print("=" * 52 + "\n")
+    if not debug:
+        time.sleep(1.5)
+        minimize_console()
 
     last, misses = None, 0
     while True:
