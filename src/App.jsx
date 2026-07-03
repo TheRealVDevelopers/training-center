@@ -10,6 +10,7 @@ import Scan from './pages/Scan'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminCredits from './pages/AdminCredits'
 import SuperAdmin from './pages/SuperAdmin'
+import Profile from './pages/Profile'
 
 export default function App() {
   const { loading } = useAuth()
@@ -31,6 +32,7 @@ export default function App() {
       {/* Member routes (account login) */}
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/booking/:id" element={<ProtectedRoute><BookingView /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

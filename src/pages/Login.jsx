@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { signInWithEmailAndPassword } from 'firebase/auth'
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
 
@@ -7,8 +7,24 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
   const nav = useNavigate()
+
+  async function forgot() {
+    setErr('')
+    setMsg('')
+    if (!email.trim()) {
+      setErr('Type your email above first, then tap "Forgot password".')
+      return
+    }
+    try {
+      await sendPasswordResetEmail(auth, email.trim())
+      setMsg('Password reset link sent — check your email inbox (and spam).')
+    } catch (e) {
+      setErr(e.message)
+    }
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -36,12 +52,16 @@ export default function Login() {
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
 
         {err && <div className="error">{err}</div>}
+        {msg && <div className="banner">{msg}</div>}
 
         <button className="btn primary block" disabled={busy}>
           {busy ? 'Logging in…' : 'Log in'}
         </button>
         <p className="muted center-text">
           New here? <Link to="/signup">Create an account</Link>
+        </p>
+        <p className="muted small center-text">
+          <a href="#forgot" onClick={(e) => { e.preventDefault(); forgot() }}>Forgot password?</a>
         </p>
       </form>
     </div>

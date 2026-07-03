@@ -92,6 +92,7 @@ export default function Dashboard() {
         </div>
         <div className="row gap">
           {isSuper && <Link className="btn ghost small" to="/super">Super Admin</Link>}
+          <Link className="btn ghost small" to="/profile">👤 Profile</Link>
           <button className="btn ghost small" onClick={logout}>Log out</button>
         </div>
       </header>

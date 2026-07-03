@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { CURRENCY } from '../config'
 import { subscribeBooking, cancelBooking } from '../lib/db'
 
@@ -10,8 +10,38 @@ export default function BookingView() {
   const [booking, setBooking] = useState(undefined) // undefined = loading
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const qrRef = useRef(null)
 
   useEffect(() => subscribeBooking(id, setBooking), [id])
+
+  function getCanvas() {
+    return qrRef.current?.querySelector('canvas')
+  }
+
+  function savePass() {
+    const c = getCanvas()
+    if (!c) return
+    const a = document.createElement('a')
+    a.href = c.toDataURL('image/png')
+    a.download = 'saturday-training-pass.png'
+    a.click()
+  }
+
+  async function sharePass() {
+    const c = getCanvas()
+    if (!c) return
+    try {
+      const blob = await new Promise((r) => c.toBlob(r, 'image/png'))
+      const file = new File([blob], 'saturday-training-pass.png', { type: 'image/png' })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Saturday Training pass' })
+        return
+      }
+    } catch {
+      /* user cancelled share, or share unsupported — fall back to download */
+    }
+    savePass()
+  }
 
   if (booking === undefined) return <div className="center muted">Loading booking…</div>
   if (booking === null) return <div className="center muted">Booking not found.</div>
@@ -38,10 +68,20 @@ export default function BookingView() {
 
         {booking.status === 'pending' ? (
           <>
-            <div className="qrwrap">
-              <QRCodeSVG value={booking.qrToken} size={240} level="M" includeMargin />
+            <div className="qrwrap" ref={qrRef}>
+              <QRCodeCanvas
+                value={booking.qrToken}
+                size={480}
+                level="M"
+                includeMargin
+                style={{ width: 240, height: 240 }}
+              />
             </div>
             <p className="muted small">Show this at the gate. It stays active until it’s scanned.</p>
+            <div className="row gap" style={{ justifyContent: 'center', marginBottom: 6 }}>
+              <button type="button" className="btn small" onClick={savePass}>⬇ Save to phone</button>
+              <button type="button" className="btn small" onClick={sharePass}>📤 Share</button>
+            </div>
           </>
         ) : (
           <p className="muted">

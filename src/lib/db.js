@@ -42,6 +42,10 @@ export async function createMemberProfile(uid, data) {
   })
 }
 
+export async function updateMemberProfile(uid, data) {
+  await updateDoc(doc(db, 'members', uid), data)
+}
+
 export async function uploadPhoto(path, file) {
   const r = ref(storage, path)
   await uploadBytes(r, file)

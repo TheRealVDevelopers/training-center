@@ -368,6 +368,11 @@ input:focus, select:focus { outline: none; border-color: var(--brand); backgroun
 .hist-title { font-family: var(--font-display); font-weight: 800; font-size: 14.5px; }
 .hist-amt { font-family: var(--font-display); font-weight: 800; font-size: 15px; }
 
+/* Profile page */
+.profile-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.profile-photo { width: 60px; height: 60px; border-radius: 16px; object-fit: cover; border: 1px solid var(--line); }
+.profile-head .avatar-fallback { width: 60px; height: 60px; border-radius: 16px; font-size: 24px; }
+
 /* Confetti */
 .confetti-root { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
 .confetti-piece { position: absolute; top: -14px; width: 9px; height: 15px; border-radius: 2px; opacity: 0.95; animation: confetti-fall 1.5s cubic-bezier(0.3, 0.7, 0.5, 1) forwards; }
