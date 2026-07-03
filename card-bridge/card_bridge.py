@@ -144,8 +144,8 @@ def read_uid(dll, verbose=False):
         if verbose:
             print("  %-10s mode=0x%02X ret=%s bytes=%s"
                   % (name, mode, ret, to_hex(snr, 10)))
-        # success if a non-empty serial came back
-        if nonzero and ret in (0, 0x80):
+        # ret == 0 means a card was found (ret == 1 = no card in field).
+        if ret == 0 and nonzero:
             raw = bytes(snr[:10]).rstrip(b"\x00") or bytes(snr[:4])
             return raw.hex().upper()
     return None
@@ -159,17 +159,21 @@ def main():
         print("send me the console output and I'll adjust the function names.")
         sys.exit(1)
 
-    print("\nReady. Tap a card on the reader.  (Ctrl+C to quit)\n")
-    print("First run is diagnostic — it prints what each read returns.")
-    print("Copy this output after tapping a couple of cards.\n")
+    debug = "--debug" in sys.argv
+    print("\n" + "=" * 52)
+    print(" Card bridge running.  Tap a card to check someone in.")
+    print(" >> Click your /scan page first so it's the FOCUSED window,")
+    print("    otherwise the card ID types into this terminal instead.")
+    print(" (Ctrl+C to quit.  Run with --debug to see every read.)")
+    print("=" * 52 + "\n")
 
     last, last_t = None, 0.0
     while True:
-        uid = read_uid(dll, verbose=True)
+        uid = read_uid(dll, verbose=debug)
         if uid:
             now = time.time()
             if uid != last or now - last_t > 2.0:
-                print(">>> CARD %s  — typing it now" % uid)
+                print("  card %s  ->  sent" % uid)
                 type_string(uid)
                 last, last_t = uid, now
             time.sleep(0.4)
