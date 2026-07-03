@@ -9,6 +9,10 @@ export const SESSION = {
 // Max guests a single member can book per session.
 export const MAX_GUESTS_PER_SESSION = 3
 
+// Walk-in mode: members just tap their card / show their permanent QR to enter
+// (no booking step). Set false to fall back to the older book-a-slot flow.
+export const WALKIN_MODE = true
+
 // The SUPER ADMIN (owner). Only this email, logged in, can open /super to
 // generate the access codes — and is auto-allowed into /admin and /scan
 // without needing a code. Everyone else uses a 6-digit code instead of an

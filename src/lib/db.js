@@ -37,8 +37,80 @@ export async function createMemberProfile(uid, data) {
     photoURL: data.photoURL || '',
     balance: 0, // money in the wallet
     reserved: 0, // money held by active (pending) bookings, not yet deducted
+    memberToken: makeToken(), // permanent — powers the entry QR + NFC card
     role: 'member',
     createdAt: serverTimestamp(),
+  })
+}
+
+// Backfill a permanent token for members created before walk-in mode.
+export async function ensureMemberToken(member) {
+  if (member.memberToken) return member.memberToken
+  const token = makeToken()
+  await updateDoc(doc(db, 'members', member.id), { memberToken: token })
+  return token
+}
+
+export async function findMemberByToken(token) {
+  const snap = await getDocs(query(collection(db, 'members'), where('memberToken', '==', token), limit(1)))
+  if (snap.empty) return null
+  const d = snap.docs[0]
+  return { id: d.id, ...d.data() }
+}
+
+// Walk-in check-in: tap NFC card / scan permanent QR → deduct one session and
+// mark the member "inside". Idempotent per (session, member): a re-tap in the
+// same session returns "already inside" and never double-charges.
+export async function checkInMember(memberToken, gate, session) {
+  if (!session) return { ok: false, reason: 'nosession', message: 'No active session' }
+  const member = await findMemberByToken(memberToken)
+  if (!member) return { ok: false, reason: 'unknown', message: 'Card not recognised' }
+
+  const fee = session.feePerPerson || 0
+  const bookingId = `walkin_${session.id}_${member.id}`
+  return runTransaction(db, async (tx) => {
+    const bRef = doc(db, 'bookings', bookingId)
+    const mRef = doc(db, 'members', member.id)
+    const bSnap = await tx.get(bRef)
+    const mSnap = await tx.get(mRef)
+    const m = mSnap.exists() ? { id: member.id, ...mSnap.data() } : member
+    const balance = m.balance || 0
+
+    if (bSnap.exists()) {
+      return { ok: false, reason: 'already', message: 'Already inside', member: m, sessionsLeft: fee ? Math.floor(balance / fee) : 0 }
+    }
+    if (balance < fee) {
+      return { ok: false, reason: 'insufficient', message: `Low balance ₹${balance}`, member: m, sessionsLeft: 0 }
+    }
+
+    tx.update(mRef, { balance: balance - fee })
+    tx.set(bRef, {
+      memberId: member.id,
+      memberName: m.name,
+      sessionId: session.id,
+      type: 'walkin',
+      people: [{ name: m.name, isGuest: false, photoURL: m.photoURL || '' }],
+      peopleCount: 1,
+      feePerPerson: fee,
+      totalAmount: fee,
+      status: 'checked_in',
+      gate: gate || null,
+      qrToken: memberToken,
+      createdAt: serverTimestamp(),
+      checkedInAt: serverTimestamp(),
+    })
+    const txnRef = doc(collection(db, 'transactions'))
+    tx.set(txnRef, {
+      memberId: member.id,
+      type: 'deduction',
+      amount: -fee,
+      bookingId,
+      note: 'Entry · walk-in',
+      createdAt: serverTimestamp(),
+    })
+
+    const remaining = balance - fee
+    return { ok: true, reason: 'checked_in', message: 'Welcome', member: m, deducted: fee, remaining, sessionsLeft: fee ? Math.floor(remaining / fee) : 0 }
   })
 }
 

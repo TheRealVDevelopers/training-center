@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CURRENCY } from '../config'
-import { subscribeMembers, addCredit } from '../lib/db'
+import { subscribeMembers, addCredit, ensureMemberToken } from '../lib/db'
+import { nfcSupported, writeNfc } from '../lib/nfc'
 
 export default function AdminCredits() {
   const [members, setMembers] = useState([])
@@ -12,6 +13,8 @@ export default function AdminCredits() {
   const [ref, setRef] = useState('')
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [nfcMsg, setNfcMsg] = useState('')
+  const [nfcBusy, setNfcBusy] = useState(false)
 
   useEffect(() => subscribeMembers(setMembers), [])
 
@@ -45,6 +48,21 @@ export default function AdminCredits() {
       setMsg(e.message)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function issueCard() {
+    if (!sel) return
+    setNfcMsg('Tap a blank card on the back of the phone…')
+    setNfcBusy(true)
+    try {
+      const token = sel.memberToken || (await ensureMemberToken(sel))
+      await writeNfc(token)
+      setNfcMsg(`✓ Card issued to ${sel.name}. They can tap to enter.`)
+    } catch (e) {
+      setNfcMsg(e.message || 'Card write failed — hold the card still and retry.')
+    } finally {
+      setNfcBusy(false)
     }
   }
 
@@ -99,6 +117,23 @@ export default function AdminCredits() {
             {busy ? 'Adding…' : `Add ${CURRENCY}${amount || 0}`}
           </button>
         </form>
+      )}
+
+      {sel && (
+        <div className="card">
+          <h3>NFC card · {sel.name}</h3>
+          <div className="muted small" style={{ marginBottom: 10 }}>
+            Assign a blank card to this member. They tap it at the door to enter — the card only stores their ID, never the balance.
+          </div>
+          {nfcSupported() ? (
+            <button className="btn block" onClick={issueCard} disabled={nfcBusy}>
+              {nfcBusy ? 'Waiting for card…' : '📶 Issue / write NFC card'}
+            </button>
+          ) : (
+            <div className="banner warn">NFC writing needs an Android phone with Chrome. Open this page there to issue cards.</div>
+          )}
+          {nfcMsg && <div className="banner">{nfcMsg}</div>}
+        </div>
       )}
     </div>
   )

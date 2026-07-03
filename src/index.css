@@ -373,6 +373,19 @@ input:focus, select:focus { outline: none; border-color: var(--brand); backgroun
 .profile-photo { width: 60px; height: 60px; border-radius: 16px; object-fit: cover; border: 1px solid var(--line); }
 .profile-head .avatar-fallback { width: 60px; height: 60px; border-radius: 16px; font-size: 24px; }
 
+/* Walk-in scanner controls + NFC */
+.scan-controls { position: fixed; bottom: 24px; left: 0; right: 0; z-index: 40; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 0 16px; }
+.scan-pill { background: #fff; color: var(--ink); border: none; padding: 13px 20px; border-radius: 999px; font-weight: 800; font-size: 14px; font-family: inherit; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); cursor: pointer; }
+.scan-pill.live { background: var(--brand); color: #fff; animation: glowpulse 2s ease-in-out infinite; }
+.scan-pill:disabled { cursor: default; }
+.scan-nfcerr { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 40; background: rgba(226, 59, 50, 0.92); color: #fff; padding: 9px 15px; border-radius: 999px; font-size: 13px; font-weight: 700; max-width: 90vw; text-align: center; }
+.scan-result.already { background: radial-gradient(circle at 50% 40%, #2f7fe0, #1c539c); }
+.manual-row .manual-name { flex: 1; }
+
+/* Member entry pass */
+.entrypass h3 { font-size: 18px; }
+.entrypass .qrwrap { margin: 8px auto 12px; }
+
 /* Confetti */
 .confetti-root { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
 .confetti-piece { position: absolute; top: -14px; width: 9px; height: 15px; border-radius: 2px; opacity: 0.95; animation: confetti-fall 1.5s cubic-bezier(0.3, 0.7, 0.5, 1) forwards; }

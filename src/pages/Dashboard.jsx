@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { QRCodeCanvas } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
-import { CURRENCY, MAX_GUESTS_PER_SESSION } from '../config'
+import { CURRENCY, MAX_GUESTS_PER_SESSION, WALKIN_MODE } from '../config'
 import GuestForm from '../components/GuestForm'
 import CountUp from '../components/CountUp'
 import { confetti } from '../lib/celebrate'
@@ -11,6 +12,7 @@ import {
   subscribeTransactions,
   createBooking,
   uploadPhoto,
+  ensureMemberToken,
 } from '../lib/db'
 
 export default function Dashboard() {
@@ -23,10 +25,14 @@ export default function Dashboard() {
   const [guestMode, setGuestMode] = useState(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const qrRef = useRef(null)
 
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => (member ? subscribeMemberBookings(member.id, setBookings) : undefined), [member])
   useEffect(() => (member ? subscribeTransactions(member.id, setTxns) : undefined), [member])
+  useEffect(() => {
+    if (member && !member.memberToken) ensureMemberToken(member).catch(() => {})
+  }, [member])
 
   if (!member) return <div className="center muted">Loading your profile…</div>
 
@@ -83,6 +89,30 @@ export default function Dashboard() {
 
   const pending = bookings.filter((b) => b.status === 'pending')
 
+  function saveEntryPass() {
+    const c = qrRef.current?.querySelector('canvas')
+    if (!c) return
+    const a = document.createElement('a')
+    a.href = c.toDataURL('image/png')
+    a.download = 'entry-pass.png'
+    a.click()
+  }
+  async function shareEntryPass() {
+    const c = qrRef.current?.querySelector('canvas')
+    if (!c) return
+    try {
+      const blob = await new Promise((r) => c.toBlob(r, 'image/png'))
+      const file = new File([blob], 'entry-pass.png', { type: 'image/png' })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'My entry pass' })
+        return
+      }
+    } catch {
+      /* fall through to download */
+    }
+    saveEntryPass()
+  }
+
   return (
     <div className="page">
       <header className="topbar">
@@ -118,7 +148,7 @@ export default function Dashboard() {
         </div>
 
         <div className="memcard-facts">
-          <div><span className="f-val">{Math.max(0, sessionsBookable)}</span><span className="f-lbl">sessions to book</span></div>
+          <div><span className="f-val">{Math.max(0, sessionsBookable)}</span><span className="f-lbl">sessions left</span></div>
           <div><span className="f-val">{CURRENCY}{reserved}</span><span className="f-lbl">on hold</span></div>
           <div><span className="f-val">{fee ? `${CURRENCY}${fee}` : '—'}</span><span className="f-lbl">per session</span></div>
         </div>
@@ -139,53 +169,80 @@ export default function Dashboard() {
       {!session && <div className="banner warn">No active session right now. Ask the admin to start one.</div>}
       {err && <div className="error">{err}</div>}
 
-      <h3 className="section-h">Book your Saturday slot</h3>
-      <div className="actions">
-        <button className="action-card primary" disabled={!session || busy || available < fee} onClick={() => book('self')}>
-          <span className="action-ico">🙋</span>
-          <span className="action-body">
-            <span className="action-title">Book a Slot for Myself</span>
-            <span className="action-sub">{CURRENCY}{fee} · 1 person</span>
-          </span>
-          <span className="chev">›</span>
-        </button>
-        <button className="action-card" disabled={!session || busy || available < fee * 2 || guestsLeft < 1} onClick={() => setGuestMode('self_guest')}>
-          <span className="action-ico">👥</span>
-          <span className="action-body">
-            <span className="action-title">Myself + Guest</span>
-            <span className="action-sub">{CURRENCY}{fee * 2} · 2 people</span>
-          </span>
-          <span className="chev">›</span>
-        </button>
-        <button className="action-card" disabled={!session || busy || available < fee || guestsLeft < 1} onClick={() => setGuestMode('guest')}>
-          <span className="action-ico">🎟️</span>
-          <span className="action-body">
-            <span className="action-title">Guest Only</span>
-            <span className="action-sub">{CURRENCY}{fee} · 1 guest</span>
-          </span>
-          <span className="chev">›</span>
-        </button>
-      </div>
-      {session && available < fee && (
-        <div className="topup-note">
-          <span>💳</span> You have {CURRENCY}{available} available — top up at the front desk to book a session.
+      {WALKIN_MODE && (
+        <div className="card entrypass center-text">
+          <h3 style={{ margin: 0 }}>Your Entry Pass</h3>
+          <p className="muted small">Tap your card — or show this QR — at the door to walk in.</p>
+          {member.memberToken ? (
+            <>
+              <div className="qrwrap" ref={qrRef}>
+                <QRCodeCanvas value={member.memberToken} size={460} level="M" includeMargin style={{ width: 230, height: 230 }} />
+              </div>
+              <div className="row gap" style={{ justifyContent: 'center' }}>
+                <button className="btn small" onClick={saveEntryPass}>⬇ Save</button>
+                <button className="btn small" onClick={shareEntryPass}>📤 Share</button>
+              </div>
+            </>
+          ) : (
+            <div className="muted small">Preparing your pass…</div>
+          )}
+          {session && available < fee && (
+            <div className="topup-note" style={{ marginTop: 14 }}>
+              <span>💳</span> Low balance ({CURRENCY}{available}). Top up at the desk to keep entering.
+            </div>
+          )}
         </div>
-      )}
-      {session && guestsBooked > 0 && (
-        <div className="muted small center-text">Guests left this session: {Math.max(0, guestsLeft)} of {MAX_GUESTS_PER_SESSION}</div>
       )}
 
-      {/* Active bookings */}
-      {pending.length > 0 && (
-        <div className="card">
-          <h3>Your QR passes</h3>
-          {pending.map((b) => (
-            <Link key={b.id} to={`/booking/${b.id}`} className="row between listrow">
-              <span>{labelFor(b)} · {b.peopleCount} {b.peopleCount > 1 ? 'people' : 'person'}</span>
-              <span className="tag pending">Show QR ›</span>
-            </Link>
-          ))}
-        </div>
+      {!WALKIN_MODE && (
+        <>
+          <h3 className="section-h">Book your Saturday slot</h3>
+          <div className="actions">
+            <button className="action-card primary" disabled={!session || busy || available < fee} onClick={() => book('self')}>
+              <span className="action-ico">🙋</span>
+              <span className="action-body">
+                <span className="action-title">Book a Slot for Myself</span>
+                <span className="action-sub">{CURRENCY}{fee} · 1 person</span>
+              </span>
+              <span className="chev">›</span>
+            </button>
+            <button className="action-card" disabled={!session || busy || available < fee * 2 || guestsLeft < 1} onClick={() => setGuestMode('self_guest')}>
+              <span className="action-ico">👥</span>
+              <span className="action-body">
+                <span className="action-title">Myself + Guest</span>
+                <span className="action-sub">{CURRENCY}{fee * 2} · 2 people</span>
+              </span>
+              <span className="chev">›</span>
+            </button>
+            <button className="action-card" disabled={!session || busy || available < fee || guestsLeft < 1} onClick={() => setGuestMode('guest')}>
+              <span className="action-ico">🎟️</span>
+              <span className="action-body">
+                <span className="action-title">Guest Only</span>
+                <span className="action-sub">{CURRENCY}{fee} · 1 guest</span>
+              </span>
+              <span className="chev">›</span>
+            </button>
+          </div>
+          {session && available < fee && (
+            <div className="topup-note">
+              <span>💳</span> You have {CURRENCY}{available} available — top up at the front desk to book a session.
+            </div>
+          )}
+          {session && guestsBooked > 0 && (
+            <div className="muted small center-text">Guests left this session: {Math.max(0, guestsLeft)} of {MAX_GUESTS_PER_SESSION}</div>
+          )}
+          {pending.length > 0 && (
+            <div className="card">
+              <h3>Your QR passes</h3>
+              {pending.map((b) => (
+                <Link key={b.id} to={`/booking/${b.id}`} className="row between listrow">
+                  <span>{labelFor(b)} · {b.peopleCount} {b.peopleCount > 1 ? 'people' : 'person'}</span>
+                  <span className="tag pending">Show QR ›</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Activity */}
