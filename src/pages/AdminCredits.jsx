@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CURRENCY } from '../config'
-import { subscribeMembers, addCredit, ensureMemberToken } from '../lib/db'
+import { subscribeMembers, addCredit, ensureMemberToken, assignCard } from '../lib/db'
 import { nfcSupported, writeNfc } from '../lib/nfc'
+import { captureOneCard } from '../lib/wedge'
 
 export default function AdminCredits() {
   const [members, setMembers] = useState([])
@@ -66,6 +67,28 @@ export default function AdminCredits() {
     }
   }
 
+  function assignViaReader() {
+    if (!sel) return
+    setNfcMsg('Tap the card on the USB reader now…')
+    setNfcBusy(true)
+    document.activeElement?.blur()
+    captureOneCard(async (uid) => {
+      if (!uid) {
+        setNfcMsg('Didn’t catch a card — click the button and tap again.')
+        setNfcBusy(false)
+        return
+      }
+      try {
+        await assignCard(sel.id, uid)
+        setNfcMsg(`✓ Card ${uid} assigned to ${sel.name}. They can tap to enter.`)
+      } catch (e) {
+        setNfcMsg(e.message)
+      } finally {
+        setNfcBusy(false)
+      }
+    })
+  }
+
   return (
     <div className="page">
       <header className="topbar">
@@ -121,16 +144,18 @@ export default function AdminCredits() {
 
       {sel && (
         <div className="card">
-          <h3>NFC card · {sel.name}</h3>
+          <h3>Assign card · {sel.name}</h3>
           <div className="muted small" style={{ marginBottom: 10 }}>
-            Assign a blank card to this member. They tap it at the door to enter — the card only stores their ID, never the balance.
+            Give this member a card to tap at the door. The card only stores their ID — never the balance — so recharges never touch the card.
           </div>
-          {nfcSupported() ? (
+          {sel.cardUid && <div className="banner">Current card: <b>{sel.cardUid}</b></div>}
+          <button className="btn primary block" onClick={assignViaReader} disabled={nfcBusy}>
+            💳 {nfcBusy ? 'Tap the card now…' : 'Assign card (USB reader)'}
+          </button>
+          {nfcSupported() && (
             <button className="btn block" onClick={issueCard} disabled={nfcBusy}>
-              {nfcBusy ? 'Waiting for card…' : '📶 Issue / write NFC card'}
+              📶 Write card (phone NFC)
             </button>
-          ) : (
-            <div className="banner warn">NFC writing needs an Android phone with Chrome. Open this page there to issue cards.</div>
           )}
           {nfcMsg && <div className="banner">{nfcMsg}</div>}
         </div>

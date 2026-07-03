@@ -13,6 +13,7 @@ import { feedback, vibrate, primeAudio } from '../lib/feedback'
 import { enqueue, getQueue, removeFromQueue, queueSize } from '../lib/scanQueue'
 import { confetti } from '../lib/celebrate'
 import { nfcSupported, startNfcRead } from '../lib/nfc'
+import { useCardWedge } from '../lib/wedge'
 
 // Door check-in. Three inputs, one flow: NFC card tap, QR camera scan, or
 // find-by-name. Each resolves to a member token → walk-in check-in (deduct one
@@ -41,6 +42,13 @@ export default function Scan() {
   useEffect(() => subscribeMembers(setMembers), [])
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => { sessionRef.current = session }, [session])
+
+  // USB card reader (keyboard mode): tapping a card anywhere here checks in.
+  useCardWedge((code) => {
+    if (lockRef.current) return
+    lockRef.current = true
+    processCheckIn(code.trim())
+  }, !manual)
 
   // Unified check-in: walk-in member token first, legacy booking token fallback.
   async function doCheckIn(token) {
@@ -204,12 +212,15 @@ export default function Scan() {
       {/* Bottom controls: NFC + manual lookup */}
       {!manual && !result && (
         <div className="scan-controls">
-          {nfcSupported() && (
-            <button className={`scan-pill ${nfcOn ? 'live' : ''}`} onClick={enableNfc} disabled={nfcOn}>
-              {nfcOn ? '📶 Tap a card…' : '📶 Enable card tap'}
-            </button>
-          )}
-          <button className="scan-pill" onClick={() => setManual(true)}>⌨️ Find by name</button>
+          <div className="scan-hint">💳 Tap a card on the reader · or scan a QR</div>
+          <div className="row gap" style={{ justifyContent: 'center' }}>
+            {nfcSupported() && (
+              <button className={`scan-pill ${nfcOn ? 'live' : ''}`} onClick={enableNfc} disabled={nfcOn}>
+                {nfcOn ? '📶 Tap a card…' : '📶 Phone NFC'}
+              </button>
+            )}
+            <button className="scan-pill" onClick={() => setManual(true)}>⌨️ Find by name</button>
+          </div>
         </div>
       )}
       {nfcErr && !result && <div className="scan-nfcerr">{nfcErr}</div>}

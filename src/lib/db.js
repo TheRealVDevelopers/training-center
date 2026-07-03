@@ -58,12 +58,31 @@ export async function findMemberByToken(token) {
   return { id: d.id, ...d.data() }
 }
 
+// Physical card's hardware UID (what a keyboard-wedge USB reader types).
+export async function findMemberByCardUid(uid) {
+  const snap = await getDocs(query(collection(db, 'members'), where('cardUid', '==', uid), limit(1)))
+  if (snap.empty) return null
+  const d = snap.docs[0]
+  return { id: d.id, ...d.data() }
+}
+
+// Resolve a tapped/scanned value: try the written token (QR / Web NFC) first,
+// then the card's UID (USB reader). Same check-in flow for all three inputs.
+export async function findMemberByAnyId(id) {
+  return (await findMemberByToken(id)) || (await findMemberByCardUid(id))
+}
+
+// Link a physical card's UID to a member (card issuance via USB reader).
+export async function assignCard(memberId, cardUid) {
+  await updateDoc(doc(db, 'members', memberId), { cardUid })
+}
+
 // Walk-in check-in: tap NFC card / scan permanent QR → deduct one session and
 // mark the member "inside". Idempotent per (session, member): a re-tap in the
 // same session returns "already inside" and never double-charges.
-export async function checkInMember(memberToken, gate, session) {
+export async function checkInMember(memberIdValue, gate, session) {
   if (!session) return { ok: false, reason: 'nosession', message: 'No active session' }
-  const member = await findMemberByToken(memberToken)
+  const member = await findMemberByAnyId(memberIdValue)
   if (!member) return { ok: false, reason: 'unknown', message: 'Card not recognised' }
 
   const fee = session.feePerPerson || 0
@@ -95,7 +114,7 @@ export async function checkInMember(memberToken, gate, session) {
       totalAmount: fee,
       status: 'checked_in',
       gate: gate || null,
-      qrToken: memberToken,
+      qrToken: member.memberToken || memberIdValue,
       createdAt: serverTimestamp(),
       checkedInAt: serverTimestamp(),
     })

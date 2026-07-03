@@ -374,7 +374,8 @@ input:focus, select:focus { outline: none; border-color: var(--brand); backgroun
 .profile-head .avatar-fallback { width: 60px; height: 60px; border-radius: 16px; font-size: 24px; }
 
 /* Walk-in scanner controls + NFC */
-.scan-controls { position: fixed; bottom: 24px; left: 0; right: 0; z-index: 40; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 0 16px; }
+.scan-controls { position: fixed; bottom: 24px; left: 0; right: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 16px; }
+.scan-hint { background: rgba(0, 0, 0, 0.5); color: #fff; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; backdrop-filter: blur(6px); }
 .scan-pill { background: #fff; color: var(--ink); border: none; padding: 13px 20px; border-radius: 999px; font-weight: 800; font-size: 14px; font-family: inherit; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); cursor: pointer; }
 .scan-pill.live { background: var(--brand); color: #fff; animation: glowpulse 2s ease-in-out infinite; }
 .scan-pill:disabled { cursor: default; }
