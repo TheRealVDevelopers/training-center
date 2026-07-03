@@ -148,7 +148,8 @@ def find_browser_hwnd():
 
 
 def focus_browser(hwnd):
-    """Bring the browser to the front so the typed card id lands there."""
+    """Bring the browser to the front AND click into the page area, so the
+    typed card id reaches the web page (not the address bar / devtools)."""
     if not hwnd:
         return
     user32 = ctypes.windll.user32
@@ -158,6 +159,15 @@ def focus_browser(hwnd):
         user32.keybd_event(0x12, 0, 0, 0)
         user32.keybd_event(0x12, 0, 2, 0)
         user32.SetForegroundWindow(hwnd)
+        # Click into the left-centre of the window — that's blank page area on
+        # the /card screen, so it just gives the web content keyboard focus.
+        rect = wt.RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        x = int(rect.left + (rect.right - rect.left) * 0.22)
+        y = int((rect.top + rect.bottom) / 2)
+        user32.SetCursorPos(x, y)
+        user32.mouse_event(0x0002, 0, 0, 0, 0)  # left down
+        user32.mouse_event(0x0004, 0, 0, 0, 0)  # left up
     except Exception:
         pass
 
@@ -230,7 +240,7 @@ def main():
             if uid != last:  # only fire once per physical tap
                 hwnd = find_browser_hwnd()
                 focus_browser(hwnd)
-                time.sleep(0.06)
+                time.sleep(0.12)
                 print("  card %s  ->  %s" % (uid, "sent to browser" if hwnd else "typed (no browser found!)"))
                 type_string(uid)
                 last = uid
