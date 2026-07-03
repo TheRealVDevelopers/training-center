@@ -121,6 +121,47 @@ def minimize_console():
         pass
 
 
+def find_browser_hwnd():
+    """Find the browser window showing the app (prefer the app's tab title)."""
+    user32 = ctypes.windll.user32
+    result = {"app": None, "browser": None}
+
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, wt.HWND, wt.LPARAM)
+    def cb(hwnd, _):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        n = user32.GetWindowTextLengthW(hwnd)
+        if n <= 0:
+            return True
+        buf = ctypes.create_unicode_buffer(n + 1)
+        user32.GetWindowTextW(hwnd, buf, n + 1)
+        t = buf.value
+        if "Saturday Training" in t or "training-center" in t:
+            result["app"] = hwnd
+        elif "Google Chrome" in t or " Chrome" in t or "Microsoft​ Edge" in t or "Edge" in t or "Brave" in t:
+            if result["browser"] is None:
+                result["browser"] = hwnd
+        return True
+
+    user32.EnumWindows(cb, 0)
+    return result["app"] or result["browser"]
+
+
+def focus_browser(hwnd):
+    """Bring the browser to the front so the typed card id lands there."""
+    if not hwnd:
+        return
+    user32 = ctypes.windll.user32
+    try:
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        # Alt tap bypasses Windows' foreground-lock so SetForegroundWindow works.
+        user32.keybd_event(0x12, 0, 0, 0)
+        user32.keybd_event(0x12, 0, 2, 0)
+        user32.SetForegroundWindow(hwnd)
+    except Exception:
+        pass
+
+
 # ---- card reading ---------------------------------------------------------
 def to_hex(buf, n):
     return "".join("%02X" % buf[i] for i in range(n))
@@ -172,10 +213,9 @@ def main():
     debug = "--debug" in sys.argv
     print("\n" + "=" * 52)
     print(" Card bridge running.")
-    print(" This window will MINIMIZE itself now — that's normal.")
-    print(" Keep your browser (/card page) open and in front.")
-    print(" Each tap types the card into whichever window is focused,")
-    print(" so the browser must be the front window.")
+    print(" Just leave the /card page open in your browser — the bridge")
+    print(" brings it to the front automatically on each tap, so you")
+    print(" don't have to click anything. This window will minimize.")
     print(" (Ctrl+C to quit.  Run with --debug to keep this visible.)")
     print("=" * 52 + "\n")
     if not debug:
@@ -188,7 +228,10 @@ def main():
         if uid:
             misses = 0
             if uid != last:  # only fire once per physical tap
-                print("  card %s  ->  sent" % uid)
+                hwnd = find_browser_hwnd()
+                focus_browser(hwnd)
+                time.sleep(0.06)
+                print("  card %s  ->  %s" % (uid, "sent to browser" if hwnd else "typed (no browser found!)"))
                 type_string(uid)
                 last = uid
             time.sleep(0.2)
