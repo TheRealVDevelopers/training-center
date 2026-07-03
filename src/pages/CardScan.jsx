@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { subscribeActiveSession, checkInMember } from '../lib/db'
 import { useCardWedge } from '../lib/wedge'
+import { useLocalReader } from '../lib/localReader'
 import { feedback, vibrate, primeAudio } from '../lib/feedback'
 import { confetti } from '../lib/celebrate'
 
@@ -38,11 +39,13 @@ export default function CardScan() {
     }, 2800)
   }
 
-  useCardWedge((code) => {
+  function onCard(code) {
     if (lockRef.current) return
     lockRef.current = true
     handle(code.trim())
-  }, true)
+  }
+  useLocalReader(onCard) // USB reader via the local bridge (no focus needed)
+  useCardWedge(onCard, true) // keyboard-mode reader fallback
 
   async function handle(code) {
     try {

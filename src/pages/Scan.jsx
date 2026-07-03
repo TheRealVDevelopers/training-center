@@ -14,6 +14,7 @@ import { enqueue, getQueue, removeFromQueue, queueSize } from '../lib/scanQueue'
 import { confetti } from '../lib/celebrate'
 import { nfcSupported, startNfcRead } from '../lib/nfc'
 import { useCardWedge } from '../lib/wedge'
+import { useLocalReader } from '../lib/localReader'
 
 // Door check-in. Three inputs, one flow: NFC card tap, QR camera scan, or
 // find-by-name. Each resolves to a member token → walk-in check-in (deduct one
@@ -43,12 +44,14 @@ export default function Scan() {
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => { sessionRef.current = session }, [session])
 
-  // USB card reader (keyboard mode): tapping a card anywhere here checks in.
-  useCardWedge((code) => {
+  // USB card reader: local bridge (no focus needed) + keyboard-mode fallback.
+  function onCardCode(code) {
     if (lockRef.current) return
     lockRef.current = true
     processCheckIn(code.trim())
-  }, !manual)
+  }
+  useLocalReader(onCardCode)
+  useCardWedge(onCardCode, !manual)
 
   // Unified check-in: walk-in member token first, legacy booking token fallback.
   async function doCheckIn(token) {
