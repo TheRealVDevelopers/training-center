@@ -31,3 +31,29 @@ export function useLocalReader(onTap) {
     return () => { stopped = true; clearInterval(id) }
   }, [])
 }
+
+// One-shot: resolve the NEXT card tapped on the bridge (for card issuance).
+// Returns a cancel function.
+export function captureNextCard(onCode) {
+  let baseSeq = null
+  let stopped = false
+  async function tick() {
+    if (stopped) return
+    try {
+      const r = await fetch(BRIDGE, { cache: 'no-store' })
+      const d = await r.json()
+      if (baseSeq === null) {
+        baseSeq = d.seq
+      } else if (d.seq > baseSeq && d.uid) {
+        stopped = true
+        clearInterval(id)
+        onCode(d.uid)
+      }
+    } catch {
+      /* bridge not running — ignore */
+    }
+  }
+  const id = setInterval(tick, 200)
+  tick()
+  return () => { stopped = true; clearInterval(id) }
+}

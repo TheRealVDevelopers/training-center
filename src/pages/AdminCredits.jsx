@@ -4,6 +4,7 @@ import { CURRENCY } from '../config'
 import { subscribeMembers, addCredit, ensureMemberToken, assignCard } from '../lib/db'
 import { nfcSupported, writeNfc } from '../lib/nfc'
 import { captureOneCard } from '../lib/wedge'
+import { captureNextCard } from '../lib/localReader'
 
 export default function AdminCredits() {
   const [members, setMembers] = useState([])
@@ -69,10 +70,20 @@ export default function AdminCredits() {
 
   function assignViaReader() {
     if (!sel) return
-    setNfcMsg('Tap the card on the USB reader now…')
+    setNfcMsg('Tap the card on the reader now…')
     setNfcBusy(true)
     document.activeElement?.blur()
-    captureOneCard(async (uid) => {
+
+    let cancelBridge
+    let cancelKb
+    let timer
+    let done = false
+    const finish = async (uid) => {
+      if (done) return
+      done = true
+      if (cancelBridge) cancelBridge()
+      if (cancelKb) cancelKb()
+      clearTimeout(timer)
       if (!uid) {
         setNfcMsg('Didn’t catch a card — click the button and tap again.')
         setNfcBusy(false)
@@ -86,7 +97,11 @@ export default function AdminCredits() {
       } finally {
         setNfcBusy(false)
       }
-    })
+    }
+
+    cancelBridge = captureNextCard(finish) // USB reader via the local bridge
+    cancelKb = captureOneCard(finish) // keyboard-mode reader fallback
+    timer = setTimeout(() => finish(''), 25000) // give up after 25s
   }
 
   return (
