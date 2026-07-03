@@ -387,6 +387,26 @@ input:focus, select:focus { outline: none; border-color: var(--brand); backgroun
 .entrypass h3 { font-size: 18px; }
 .entrypass .qrwrap { margin: 8px auto 12px; }
 
+/* ===== Dedicated card scanner (/card) ===== */
+.cardscan { min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 24px; position: relative;
+  background: radial-gradient(900px 500px at 50% -10%, #d9f5e6, transparent 60%), linear-gradient(180deg, #eef5f0, #e7efe9); }
+.cardscan-idle { display: grid; justify-items: center; gap: 14px; animation: rise 0.4s ease both; }
+.cardscan-badge { width: 116px; height: 116px; border-radius: 34px; background: var(--grad); display: grid; place-items: center; font-size: 54px; box-shadow: var(--shadow-brand); }
+.cardscan-title { font-family: var(--font-display); font-weight: 800; font-size: 34px; letter-spacing: -0.03em; }
+.cardscan-sub { color: var(--muted); font-weight: 700; font-size: 16px; }
+
+.cardscan-result { position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 18px; color: #fff; padding: 24px; animation: pop 0.28s ease both; }
+.cardscan-result.ok { background: radial-gradient(circle at 50% 32%, #12b866, #067a3d); }
+.cardscan-result.already { background: radial-gradient(circle at 50% 32%, #3f86e6, #1c539c); }
+.cardscan-result.warn { background: radial-gradient(circle at 50% 32%, #e6a417, #a8740a); }
+.cardscan-result.err { background: radial-gradient(circle at 50% 32%, #e2453a, #a3251c); }
+.cardscan-result.neutral { background: radial-gradient(circle at 50% 32%, #667, #363944); }
+.cardscan-photo { width: 156px; height: 156px; border-radius: 50%; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.85); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32); }
+.cardscan-photo.fallback { display: grid; place-items: center; font-size: 66px; font-weight: 800; background: rgba(255, 255, 255, 0.22); font-family: var(--font-display); }
+.cardscan-bigicon { font-size: 116px; font-weight: 900; line-height: 1; }
+.cardscan-name { font-family: var(--font-display); font-weight: 800; font-size: 44px; letter-spacing: -0.03em; line-height: 1.08; }
+.cardscan-line { font-size: 21px; font-weight: 700; opacity: 0.95; }
+
 /* Confetti */
 .confetti-root { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
 .confetti-piece { position: absolute; top: -14px; width: 9px; height: 15px; border-radius: 2px; opacity: 0.95; animation: confetti-fall 1.5s cubic-bezier(0.3, 0.7, 0.5, 1) forwards; }
