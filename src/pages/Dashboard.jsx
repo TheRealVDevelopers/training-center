@@ -136,7 +136,9 @@ export default function Dashboard() {
               : <span className="avatar-fallback">{(member.name || '?')[0]}</span>}
             <div>
               <div className="memcard-name">{member.name}</div>
-              <div className="memcard-role">Saturday Training · Member</div>
+              <div className="memcard-role">
+                {member.position || 'Member'}{member.clubName ? ` · ${member.clubName}` : ''}
+              </div>
             </div>
           </div>
           <span className="memcard-chip">MEMBER</span>

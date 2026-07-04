@@ -33,6 +33,10 @@ export async function createMemberProfile(uid, data) {
     name: data.name,
     mobile: data.mobile,
     email: data.email,
+    position: data.position || '',
+    clubName: data.clubName || '',
+    years: data.years || '',
+    city: data.city || '',
     info: data.info || '',
     photoURL: data.photoURL || '',
     balance: 0, // money in the wallet
