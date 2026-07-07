@@ -26,7 +26,7 @@ export function useLocalReader(onTap) {
         /* bridge not running / not reachable — ignore */
       }
     }
-    const id = setInterval(() => { if (!stopped) poll() }, 250)
+    const id = setInterval(() => { if (!stopped) poll() }, 120)
     poll()
     return () => { stopped = true; clearInterval(id) }
   }, [])

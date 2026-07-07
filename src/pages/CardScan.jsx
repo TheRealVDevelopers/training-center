@@ -1,42 +1,48 @@
 import { useEffect, useRef, useState } from 'react'
-import { subscribeActiveSession, checkInMember } from '../lib/db'
+import { subscribeActiveSession, subscribeMembers, checkInMember } from '../lib/db'
 import { useCardWedge } from '../lib/wedge'
 import { useLocalReader } from '../lib/localReader'
 import { feedback, vibrate, primeAudio } from '../lib/feedback'
 import { confetti } from '../lib/celebrate'
 
-// Clean full-screen card-only scanner. Tap a card -> Welcome + name + photo,
-// or "Card not registered". No camera, no QR, no manual — just the tap.
+// Clean full-screen card-only scanner. Tap a card -> instant Welcome + name +
+// photo (resolved from a local member cache so it feels immediate), while the
+// real check-in / deduction confirms in the background.
 export default function CardScan() {
   const [session, setSession] = useState(null)
+  const [members, setMembers] = useState([])
   const [result, setResult] = useState(null)
   const sessionRef = useRef(null)
+  const membersRef = useRef([])
   const lockRef = useRef(false)
   const timer = useRef(null)
 
   useEffect(() => subscribeActiveSession(setSession), [])
+  useEffect(() => subscribeMembers(setMembers), [])
   useEffect(() => { sessionRef.current = session }, [session])
+  useEffect(() => { membersRef.current = members }, [members])
   useEffect(() => {
     const prime = () => primeAudio()
     window.addEventListener('pointerdown', prime, { once: true })
     return () => window.removeEventListener('pointerdown', prime)
   }, [])
 
-  function show(res) {
-    setResult(res)
-    if (res.kind === 'welcome') {
-      feedback(true)
-      confetti(28)
-    } else if (res.kind === 'already') {
-      vibrate(true)
-    } else {
-      feedback(false)
-    }
+  function resetTimer() {
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
       lockRef.current = false
       setResult(null)
     }, 2800)
+  }
+
+  function render(res, playFeedback) {
+    setResult(res)
+    if (playFeedback) {
+      if (res.kind === 'welcome') { feedback(true); confetti(28) }
+      else if (res.kind === 'already') vibrate(true)
+      else feedback(false)
+    }
+    resetTimer()
   }
 
   function onCard(code) {
@@ -48,16 +54,31 @@ export default function CardScan() {
   useCardWedge(onCard, true) // keyboard-mode reader fallback
 
   async function handle(code) {
+    const fee = sessionRef.current?.feePerPerson ?? 0
+    const local = membersRef.current.find((m) => m.memberToken === code || m.cardUid === code)
+
+    // Instant feedback from the local cache — no network wait.
+    let shownWelcome = false
+    if (local) {
+      if (fee && (local.balance || 0) < fee) {
+        render({ kind: 'low', member: local }, true)
+      } else {
+        render({ kind: 'welcome', member: local, pending: true }, true)
+        shownWelcome = true
+      }
+    }
+
+    // Real check-in (deduct + dedup) confirms / corrects in the background.
     try {
       const res = await checkInMember(code, 'card', sessionRef.current)
-      if (res.reason === 'unknown') show({ kind: 'notreg' })
-      else if (res.ok) show({ kind: 'welcome', member: res.member, sessionsLeft: res.sessionsLeft })
-      else if (res.reason === 'already') show({ kind: 'already', member: res.member, sessionsLeft: res.sessionsLeft })
-      else if (res.reason === 'insufficient') show({ kind: 'low', member: res.member })
-      else if (res.reason === 'nosession') show({ kind: 'nosession' })
-      else show({ kind: 'notreg' })
+      if (res.reason === 'unknown') render({ kind: 'notreg' }, !local)
+      else if (res.ok) render({ kind: 'welcome', member: res.member, sessionsLeft: res.sessionsLeft }, !shownWelcome)
+      else if (res.reason === 'already') render({ kind: 'already', member: res.member, sessionsLeft: res.sessionsLeft }, true)
+      else if (res.reason === 'insufficient') render({ kind: 'low', member: res.member }, !local)
+      else if (res.reason === 'nosession') render({ kind: 'nosession' }, true)
+      else render({ kind: 'notreg' }, true)
     } catch (e) {
-      show({ kind: 'notreg', message: e.message })
+      if (!local) render({ kind: 'notreg', message: e.message }, true)
     }
   }
 
@@ -88,7 +109,11 @@ function ResultView({ r }) {
         {photo ? <img className="cardscan-photo" src={photo} alt="" /> : <div className="cardscan-photo fallback">{initial}</div>}
         <div className="cardscan-name">{r.kind === 'welcome' ? `Welcome, ${m?.name}! 👋` : m?.name}</div>
         <div className="cardscan-line">
-          {r.kind === 'already' ? '↺ Already inside' : `✓ Checked in · ${r.sessionsLeft} sessions left`}
+          {r.kind === 'already'
+            ? '↺ Already inside'
+            : r.pending
+              ? 'Checking you in…'
+              : `✓ Checked in · ${r.sessionsLeft} sessions left`}
         </div>
       </div>
     )
