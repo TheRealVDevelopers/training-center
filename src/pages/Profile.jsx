@@ -11,6 +11,10 @@ export default function Profile() {
 
   const [name, setName] = useState(member?.name || '')
   const [mobile, setMobile] = useState(member?.mobile || '')
+  const [position, setPosition] = useState(member?.position || '')
+  const [clubName, setClubName] = useState(member?.clubName || '')
+  const [years, setYears] = useState(member?.years || '')
+  const [city, setCity] = useState(member?.city || '')
   const [photo, setPhoto] = useState(null)
   const [saveMsg, setSaveMsg] = useState('')
   const [saveErr, setSaveErr] = useState('')
@@ -30,7 +34,14 @@ export default function Profile() {
     setSaveErr('')
     setSaving(true)
     try {
-      const data = { name: name.trim(), mobile: mobile.trim() }
+      const data = {
+        name: name.trim(),
+        mobile: mobile.trim(),
+        position: position.trim(),
+        clubName: clubName.trim(),
+        years: years.trim(),
+        city: city.trim(),
+      }
       if (photo) data.photoURL = await uploadPhoto(`members/${member.id}/profile.jpg`, photo)
       await updateMemberProfile(member.id, data)
       setPhoto(null)
@@ -90,6 +101,23 @@ export default function Profile() {
 
         <label>Mobile number</label>
         <input value={mobile} onChange={(e) => setMobile(e.target.value)} inputMode="tel" required />
+
+        <label>Position / Level</label>
+        <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. President's Team · Millionaire · GET" />
+
+        <label>Club name</label>
+        <input value={clubName} onChange={(e) => setClubName(e.target.value)} placeholder="Your club name" />
+
+        <div className="signup-row">
+          <div>
+            <label>Years with Herbalife</label>
+            <input value={years} onChange={(e) => setYears(e.target.value)} inputMode="numeric" placeholder="e.g. 5" />
+          </div>
+          <div>
+            <label>City</label>
+            <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Your city" />
+          </div>
+        </div>
 
         <label>Change photo</label>
         <input type="file" accept="image/*" capture="user" onChange={(e) => setPhoto(e.target.files?.[0] || null)} />

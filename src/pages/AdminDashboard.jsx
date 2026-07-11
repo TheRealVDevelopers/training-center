@@ -54,6 +54,8 @@ export default function AdminDashboard() {
   const expectedRevenue = pending.reduce((n, b) => n + (b.totalAmount || 0), 0)
   const guests = checkedIn.reduce((n, b) => n + (b.people?.filter((p) => p.isGuest).length || 0), 0)
   const groups = checkedIn.length
+  const insideNow = checkedIn.filter((b) => !b.exitedAt).reduce((n, b) => n + (b.peopleCount || 0), 0)
+  const leftCount = attendees - insideNow
 
   // 5-minute time buckets for momentum + sparklines.
   const nowSec = Math.floor(Date.now() / 1000)
@@ -194,6 +196,9 @@ export default function AdminDashboard() {
         <div className="row gap cmd-actions">
           {isSuper && <Link className="btn ghost small" to="/super">Super Admin</Link>}
           <Link className="btn ghost small" to="/admin/credits">Credits</Link>
+          <Link className="btn ghost small" to="/admin/report">Report</Link>
+          <Link className="btn ghost small" to="/door?gate=1" target="_blank">Door 1</Link>
+          <Link className="btn ghost small" to="/door?gate=2" target="_blank">Door 2</Link>
           <Link className="btn ghost small" to="/scan?gate=1" target="_blank">Open scanner</Link>
           <button className="btn ghost small" onClick={toggleMute} title="Entry sound">{muted ? '🔕' : '🔔'}</button>
           <button className="btn danger small" onClick={handleEnd} disabled={busy}>End session</button>
@@ -207,8 +212,9 @@ export default function AdminDashboard() {
           <div className="hc-num"><CountUp value={attendees} /></div>
           <div className="hc-sub">of {capacity} seats</div>
           <div className="mini-stats">
+            <span><b>{insideNow}</b> inside</span>
+            <span><b>{leftCount}</b> left</span>
             <span><b>{guests}</b> guests</span>
-            <span><b>{groups}</b> groups</span>
             <span><b>{expectedPeople}</b> expected</span>
           </div>
         </div>
@@ -297,11 +303,11 @@ export default function AdminDashboard() {
                   {b.people.map((p, j) => p.photoURL ? <img key={j} src={p.photoURL} alt="" /> : <div key={j} className="avatar-fallback sm">{(p.name || '?')[0]}</div>)}
                 </div>
                 <div className="stream-body">
-                  <div className="feed-card-name">{b.memberName}</div>
+                  <div className="feed-card-name">{b.memberName} {b.exitedAt && <span className="left-tag">left</span>}</div>
                   <div className="muted small">{b.peopleCount} {b.peopleCount > 1 ? 'people' : 'person'} · gate {b.gate || '—'}</div>
                 </div>
                 <div className="stream-meta">
-                  <div className="feed-time">🕘 {fmtTime(b.checkedInAt)}</div>
+                  <div className="feed-time">🕘 {fmtTime(b.checkedInAt)}{b.exitedAt ? ` → ${fmtTime(b.exitedAt)}` : ''}</div>
                   <div className="muted small">−{CURRENCY}{b.totalAmount}</div>
                 </div>
               </div>

@@ -25,6 +25,8 @@ export default function Dashboard() {
   const [guestMode, setGuestMode] = useState(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [showAllTx, setShowAllTx] = useState(false)
   const qrRef = useRef(null)
 
   useEffect(() => subscribeActiveSession(setSession), [])
@@ -161,40 +163,37 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Primary actions — what a member actually comes here to do */}
+      {WALKIN_MODE && (
+        <section className="quick-actions">
+          <button className="qa-tile primary" onClick={() => setShowPass(true)} disabled={!member.memberToken}>
+            <span className="qa-ico">🎟️</span>
+            <span className="qa-t">{member.memberToken ? 'Show my pass' : 'Preparing pass…'}</span>
+            <span className="qa-s">QR for the door</span>
+          </button>
+          <Link className="qa-tile" to="/profile">
+            <span className="qa-ico">👤</span>
+            <span className="qa-t">My profile</span>
+            <span className="qa-s">Edit your details</span>
+          </Link>
+        </section>
+      )}
+
+      {/* Status — session + balance warnings live together, right under actions */}
+      {!session && <div className="banner warn">No active session right now — see you on Saturday! 🌿</div>}
+      {session && available < fee && (
+        <div className="topup-note">
+          <span>💳</span> Low balance ({CURRENCY}{available}). Top up at the desk to keep entering.
+        </div>
+      )}
+      {err && <div className="error">{err}</div>}
+
       {/* Quick stats */}
       <section className="mstats">
         <div className="mstat"><div className="mstat-val"><CountUp value={attended} /></div><div className="mstat-lbl">Sessions attended</div></div>
         <div className="mstat"><div className="mstat-val"><CountUp value={guestsBrought} /></div><div className="mstat-lbl">Guests brought</div></div>
         <div className="mstat"><div className="mstat-val">{CURRENCY}<CountUp value={toppedUp} /></div><div className="mstat-lbl">Total topped up</div></div>
       </section>
-
-      {!session && <div className="banner warn">No active session right now. Ask the admin to start one.</div>}
-      {err && <div className="error">{err}</div>}
-
-      {WALKIN_MODE && (
-        <div className="card entrypass center-text">
-          <h3 style={{ margin: 0 }}>Your Entry Pass</h3>
-          <p className="muted small">Tap your card — or show this QR — at the door to walk in.</p>
-          {member.memberToken ? (
-            <>
-              <div className="qrwrap" ref={qrRef}>
-                <QRCodeCanvas value={member.memberToken} size={460} level="M" includeMargin style={{ width: 230, height: 230 }} />
-              </div>
-              <div className="row gap" style={{ justifyContent: 'center' }}>
-                <button className="btn small" onClick={saveEntryPass}>⬇ Save</button>
-                <button className="btn small" onClick={shareEntryPass}>📤 Share</button>
-              </div>
-            </>
-          ) : (
-            <div className="muted small">Preparing your pass…</div>
-          )}
-          {session && available < fee && (
-            <div className="topup-note" style={{ marginTop: 14 }}>
-              <span>💳</span> Low balance ({CURRENCY}{available}). Top up at the desk to keep entering.
-            </div>
-          )}
-        </div>
-      )}
 
       {!WALKIN_MODE && (
         <>
@@ -258,7 +257,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div style={{ marginTop: 12 }}>
-            {txns.map((t) => (
+            {(showAllTx ? txns : txns.slice(0, 6)).map((t) => (
               <div key={t.id} className="hist-row">
                 <span className={`hist-ico ${t.type === 'topup' ? 'in' : 'out'}`}>{t.type === 'topup' ? '💳' : '🎟️'}</span>
                 <div className="hist-body">
@@ -270,6 +269,11 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+            {txns.length > 6 && (
+              <button className="btn ghost small block" onClick={() => setShowAllTx((v) => !v)}>
+                {showAllTx ? 'Show less' : `Show all ${txns.length}`}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -281,6 +285,30 @@ export default function Dashboard() {
           onCancel={() => setGuestMode(null)}
           onSubmit={(guest) => book(guestMode, guest)}
         />
+      )}
+
+      {/* Fullscreen entry pass — bright like a boarding pass so the door scanner reads it instantly */}
+      {showPass && member.memberToken && (
+        <div className="pass-modal" onClick={() => setShowPass(false)}>
+          <div className="pass-sheet" onClick={(e) => e.stopPropagation()}>
+            {member.photoURL
+              ? <img className="pass-photo" src={member.photoURL} alt="" />
+              : <span className="pass-photo fallback">{(member.name || '?')[0]}</span>}
+            <div>
+              <div className="pass-name">{member.name}</div>
+              <div className="pass-role">{member.position || 'Member'}{member.clubName ? ` · ${member.clubName}` : ''}</div>
+            </div>
+            <div className="qrwrap" ref={qrRef}>
+              <QRCodeCanvas value={member.memberToken} size={640} level="M" includeMargin style={{ width: 'min(68vw, 300px)', height: 'min(68vw, 300px)' }} />
+            </div>
+            <div className="pass-hint">Show this at the door — or just tap your card</div>
+            <div className="row gap" style={{ justifyContent: 'center' }}>
+              <button className="btn small" onClick={saveEntryPass}>⬇ Save</button>
+              <button className="btn small" onClick={shareEntryPass}>📤 Share</button>
+              <button className="btn primary small" onClick={() => setShowPass(false)}>Done</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

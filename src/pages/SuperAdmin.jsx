@@ -3,7 +3,13 @@ import { Link } from 'react-router-dom'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
-import { subscribeAccessCodes, setAccessCode } from '../lib/db'
+import { CURRENCY } from '../config'
+import {
+  subscribeAccessCodes,
+  setAccessCode,
+  subscribeActiveSession,
+  subscribeSessionBookings,
+} from '../lib/db'
 import { generateCode } from '../lib/access'
 
 export default function SuperAdmin() {
@@ -66,36 +72,106 @@ function NotAuthorized({ onLogout, email }) {
 
 function Panel({ logout }) {
   const [codes, setCodes] = useState({})
+  const [session, setSession] = useState(null)
+  const [bookings, setBookings] = useState([])
   useEffect(() => subscribeAccessCodes(setCodes), [])
+  useEffect(() => subscribeActiveSession(setSession), [])
+  useEffect(() => (session ? subscribeSessionBookings(session.id, setBookings) : undefined), [session])
+
+  const checkedIn = bookings.filter((b) => b.status === 'checked_in')
+  const attendees = checkedIn.reduce((n, b) => n + (b.peopleCount || 0), 0)
+  const inside = checkedIn.filter((b) => !b.exitedAt).reduce((n, b) => n + (b.peopleCount || 0), 0)
+  const revenue = checkedIn.reduce((n, b) => n + (b.totalAmount || 0), 0)
 
   return (
     <div className="page">
       <header className="topbar">
-        <div className="brand"><span className="leaf">🌿</span> Super Admin</div>
+        <div>
+          <div className="brand"><span className="leaf">🌿</span> Super Admin</div>
+          <div className="muted small">Owner control hub</div>
+        </div>
         <button className="btn ghost small" onClick={logout}>Log out</button>
       </header>
 
-      <p className="muted">
-        Generate the access codes, then share them: the <strong>admin code</strong> with desk staff, the{' '}
-        <strong>scanner code</strong> with door volunteers. They just type the code on their phone — no account
-        needed. Regenerate any time to instantly lock out everyone using the old code.
+      {/* Today at a glance */}
+      {session ? (
+        <>
+          <div className="row between" style={{ margin: '4px 2px 10px' }}>
+            <span className="live-pill"><span className="live-dot" />SESSION LIVE</span>
+            <Link className="btn ghost small" to="/admin">Open Command Center ›</Link>
+          </div>
+          <section className="mstats">
+            <div className="mstat"><div className="mstat-val">{inside}</div><div className="mstat-lbl">Inside now</div></div>
+            <div className="mstat"><div className="mstat-val">{attendees}</div><div className="mstat-lbl">Total today</div></div>
+            <div className="mstat"><div className="mstat-val">{CURRENCY}{revenue}</div><div className="mstat-lbl">Revenue</div></div>
+          </section>
+        </>
+      ) : (
+        <div className="banner">No session running. Start one from the <Link to="/admin">Command Center</Link>.</div>
+      )}
+
+      {/* Stations — one tap to open any screen */}
+      <h3 className="section-h">Stations</h3>
+      <div className="stations-grid">
+        <Link className="station-tile" to="/admin">
+          <span className="station-ico">🖥️</span>
+          <span className="station-t">Command Center</span>
+          <span className="station-s">Live board · session control</span>
+        </Link>
+        <Link className="station-tile" to="/admin/credits">
+          <span className="station-ico">💰</span>
+          <span className="station-t">Reception · Credits</span>
+          <span className="station-s">Recharge · assign cards</span>
+        </Link>
+        <Link className="station-tile" to="/admin/report">
+          <span className="station-ico">📊</span>
+          <span className="station-t">Daily report</span>
+          <span className="station-s">Attendance · cash reconciliation</span>
+        </Link>
+        <Link className="station-tile" to="/door?gate=1" target="_blank">
+          <span className="station-ico">🚪</span>
+          <span className="station-t">Door 1</span>
+          <span className="station-s">Tap-in screen (wall tablet)</span>
+        </Link>
+        <Link className="station-tile" to="/door?gate=2" target="_blank">
+          <span className="station-ico">🚪</span>
+          <span className="station-t">Door 2</span>
+          <span className="station-s">Tap-in screen (wall tablet)</span>
+        </Link>
+        <Link className="station-tile" to="/card" target="_blank">
+          <span className="station-ico">💳</span>
+          <span className="station-t">Card scanner</span>
+          <span className="station-s">Simple tap-to-enter screen</span>
+        </Link>
+        <Link className="station-tile" to="/scan?gate=1" target="_blank">
+          <span className="station-ico">📷</span>
+          <span className="station-t">QR scanner</span>
+          <span className="station-s">Camera scanning at the door</span>
+        </Link>
+        <Link className="station-tile" to="/">
+          <span className="station-ico">🌿</span>
+          <span className="station-t">Member view</span>
+          <span className="station-s">What members see</span>
+        </Link>
+        <Link className="station-tile" to="/signup" target="_blank">
+          <span className="station-ico">📝</span>
+          <span className="station-t">Signup page</span>
+          <span className="station-s">Share for new registrations</span>
+        </Link>
+      </div>
+      <p className="muted small" style={{ margin: '2px 4px 8px' }}>
+        You open these without a code. Staff unlock them with the codes below.
       </p>
 
-      <CodeRow title="Admin page code" subtitle="for the live dashboard & credits" value={codes.adminCode} onSet={(c) => setAccessCode('adminCode', c)} />
-      <CodeRow title="Scanner page code" subtitle="for door volunteers at /scan" value={codes.scannerCode} onSet={(c) => setAccessCode('scannerCode', c)} />
-
-      <div className="card">
-        <h3>Open</h3>
-        <div className="actions">
-          <Link className="btn big" to="/admin">Admin dashboard ›</Link>
-          <Link className="btn big" to="/admin/credits">Credits &amp; balances ›</Link>
-          <Link className="btn big" to="/scan?gate=1" target="_blank">Scanner ›</Link>
-          <Link className="btn big" to="/">Member view ›</Link>
-        </div>
-        <p className="muted small" style={{ marginTop: 10 }}>
-          As the owner you’re let into these without typing a code.
-        </p>
+      {/* Access codes */}
+      <h3 className="section-h">Staff access codes</h3>
+      <div className="codes-grid">
+        <CodeRow title="Admin code" subtitle="desk staff · dashboard & credits" value={codes.adminCode} onSet={(c) => setAccessCode('adminCode', c)} />
+        <CodeRow title="Scanner code" subtitle="door staff · door / card / QR pages" value={codes.scannerCode} onSet={(c) => setAccessCode('scannerCode', c)} />
       </div>
+      <p className="muted small" style={{ margin: '2px 4px' }}>
+        Share the code — staff type it once on their device, no account needed. Regenerate to instantly lock out every device using the old code.
+      </p>
     </div>
   )
 }
@@ -103,7 +179,7 @@ function Panel({ logout }) {
 function CodeRow({ title, subtitle, value, onSet }) {
   const [custom, setCustom] = useState('')
   return (
-    <div className="card">
+    <div className="card codecard">
       <div className="row between">
         <div>
           <div className="strong">{title}</div>

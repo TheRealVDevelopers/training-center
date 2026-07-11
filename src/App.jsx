@@ -9,9 +9,11 @@ import BookingView from './pages/BookingView'
 import Scan from './pages/Scan'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminCredits from './pages/AdminCredits'
+import AdminReport from './pages/AdminReport'
 import SuperAdmin from './pages/SuperAdmin'
 import Profile from './pages/Profile'
 import CardScan from './pages/CardScan'
+import Door from './pages/Door'
 
 export default function App() {
   const { loading } = useAuth()
@@ -28,8 +30,10 @@ export default function App() {
       {/* Code-gated: volunteers/staff type a 6-digit code (owner bypasses) */}
       <Route path="/scan" element={<CodeGate kind="scanner" label="Scanner"><Scan /></CodeGate>} />
       <Route path="/card" element={<CodeGate kind="scanner" label="Card Scanner"><CardScan /></CodeGate>} />
+      <Route path="/door" element={<CodeGate kind="scanner" label="Door"><Door /></CodeGate>} />
       <Route path="/admin" element={<CodeGate kind="admin" label="Admin"><AdminDashboard /></CodeGate>} />
       <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
+      <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />
 
       {/* Member routes (account login) */}
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

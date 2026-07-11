@@ -16,6 +16,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { SESSION } from '../config'
+import { normalizeCode } from './readerId'
 
 // Opaque, unguessable token. Doubles as the booking document id and the QR
 // payload — so the scanner can look up the booking directly without a query.
@@ -72,13 +73,16 @@ export async function findMemberByCardUid(uid) {
 
 // Resolve a tapped/scanned value: try the written token (QR / Web NFC) first,
 // then the card's UID (USB reader). Same check-in flow for all three inputs.
+// Normalized so a value read on any keyboard reader matches what was stored.
 export async function findMemberByAnyId(id) {
-  return (await findMemberByToken(id)) || (await findMemberByCardUid(id))
+  const code = normalizeCode(id)
+  return (await findMemberByToken(code)) || (await findMemberByCardUid(code))
 }
 
 // Link a physical card's UID to a member (card issuance via USB reader).
+// Store the normalized UID so scans always compare equal to it later.
 export async function assignCard(memberId, cardUid) {
-  await updateDoc(doc(db, 'members', memberId), { cardUid })
+  await updateDoc(doc(db, 'members', memberId), { cardUid: normalizeCode(cardUid) })
 }
 
 // Walk-in check-in: tap NFC card / scan permanent QR → deduct one session and
@@ -100,6 +104,12 @@ export async function checkInMember(memberIdValue, gate, session) {
     const balance = m.balance || 0
 
     if (bSnap.exists()) {
+      // Already has an entry this session. If they had tapped out, this tap
+      // brings them back in — clear the exit, don't charge again.
+      if (bSnap.data().exitedAt) {
+        tx.update(bRef, { exitedAt: null, reCheckedInAt: serverTimestamp() })
+        return { ok: true, reason: 'reentry', message: 'Welcome back', member: m, sessionsLeft: fee ? Math.floor(balance / fee) : 0 }
+      }
       return { ok: false, reason: 'already', message: 'Already inside', member: m, sessionsLeft: fee ? Math.floor(balance / fee) : 0 }
     }
     if (balance < fee) {
@@ -137,6 +147,29 @@ export async function checkInMember(memberIdValue, gate, session) {
   })
 }
 
+// Tap-out: mark a member as having left this session. Never charges or refunds
+// (they already attended) — it only stamps exitedAt so the live board can show
+// who is currently inside vs. who has left. Re-tapping in Entry mode clears it.
+export async function checkOutMember(memberIdValue, session) {
+  if (!session) return { ok: false, reason: 'nosession', message: 'No active session' }
+  const member = await findMemberByAnyId(memberIdValue)
+  if (!member) return { ok: false, reason: 'unknown', message: 'Card not recognised' }
+
+  const bookingId = `walkin_${session.id}_${member.id}`
+  return runTransaction(db, async (tx) => {
+    const bRef = doc(db, 'bookings', bookingId)
+    const bSnap = await tx.get(bRef)
+    if (!bSnap.exists() || bSnap.data().status !== 'checked_in') {
+      return { ok: false, reason: 'notin', message: 'Not checked in', member }
+    }
+    if (bSnap.data().exitedAt) {
+      return { ok: false, reason: 'alreadyout', message: 'Already left', member }
+    }
+    tx.update(bRef, { exitedAt: serverTimestamp() })
+    return { ok: true, reason: 'left', message: 'Goodbye', member }
+  })
+}
+
 export async function updateMemberProfile(uid, data) {
   await updateDoc(doc(db, 'members', uid), data)
 }
@@ -154,7 +187,9 @@ export function subscribeMembers(cb) {
 }
 
 // Admin: add credit (top-up) and record it in the transactions ledger.
-export async function addCredit(memberId, amount, note) {
+// meta = { method: 'cash' | 'upi', ref } — stored as real fields so the daily
+// report can reconcile cash vs UPI without parsing the note text.
+export async function addCredit(memberId, amount, note, meta = {}) {
   await runTransaction(db, async (tx) => {
     const refM = doc(db, 'members', memberId)
     const snap = await tx.get(refM)
@@ -167,9 +202,17 @@ export async function addCredit(memberId, amount, note) {
       type: 'topup',
       amount, // positive
       note: note || 'Top-up',
+      method: meta.method || null,
+      ref: meta.ref || null,
       createdAt: serverTimestamp(),
     })
   })
+}
+
+// All top-ups in the ledger (small scale — the report filters by day client-side).
+export function subscribeAllTopups(cb) {
+  const q = query(collection(db, 'transactions'), where('type', '==', 'topup'))
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
 }
 
 // ---- Access codes (super admin sets; admin/scanner pages check) -----------

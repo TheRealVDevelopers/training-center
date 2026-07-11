@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { normalizeCode } from './readerId'
 
 // USB card readers in "keyboard mode" type the card's id fast, then Enter.
 // This captures that burst globally (ignoring real input fields) and calls
@@ -12,7 +13,7 @@ export function useCardWedge(onCode, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined
     const flush = () => {
-      const v = buf.current.trim()
+      const v = normalizeCode(buf.current)
       buf.current = ''
       if (v.length >= 3) cb.current(v)
     }
@@ -45,7 +46,7 @@ export function captureOneCard(onCode) {
   const done = () => {
     window.removeEventListener('keydown', onKey)
     if (timer) clearTimeout(timer)
-    const v = buf.trim()
+    const v = normalizeCode(buf)
     if (v.length >= 3) onCode(v)
     else onCode('')
   }

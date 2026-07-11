@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { normalizeCode } from './readerId'
 
 // Polls the local card-bridge server (card_bridge.py) and fires onTap(uid)
 // whenever a new card is published — works regardless of window focus, no
@@ -20,7 +21,7 @@ export function useLocalReader(onTap) {
           lastSeq.current = d.seq // ignore whatever was already there on load
         } else if (d.seq > lastSeq.current) {
           lastSeq.current = d.seq
-          if (d.uid) cb.current(d.uid)
+          if (d.uid) cb.current(normalizeCode(d.uid))
         }
       } catch {
         /* bridge not running / not reachable — ignore */
@@ -47,7 +48,7 @@ export function captureNextCard(onCode) {
       } else if (d.seq > baseSeq && d.uid) {
         stopped = true
         clearInterval(id)
-        onCode(d.uid)
+        onCode(normalizeCode(d.uid))
       }
     } catch {
       /* bridge not running — ignore */

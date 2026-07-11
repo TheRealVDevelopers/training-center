@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { subscribeActiveSession, subscribeMembers, checkInMember } from '../lib/db'
 import { useCardWedge } from '../lib/wedge'
 import { useLocalReader } from '../lib/localReader'
+import { useWakeLock } from '../lib/wakeLock'
 import { feedback, vibrate, primeAudio } from '../lib/feedback'
 import { confetti } from '../lib/celebrate'
 
@@ -17,6 +18,7 @@ export default function CardScan() {
   const lockRef = useRef(false)
   const timer = useRef(null)
 
+  useWakeLock(true) // keep the wall tablet's screen on
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => subscribeMembers(setMembers), [])
   useEffect(() => { sessionRef.current = session }, [session])

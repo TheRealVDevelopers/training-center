@@ -2,7 +2,7 @@
 // door check-in to make the moment feel rewarding.
 export function confetti(count = 34) {
   try {
-    const colors = ['#00c853', '#a3e635', '#00a651', '#f5b400', '#2fe07a', '#06b6d4']
+    const colors = ['#00e07a', '#8dff4f', '#35e08a', '#ffc83d', '#7dffb0', '#22d3ee']
     const root = document.createElement('div')
     root.className = 'confetti-root'
     for (let i = 0; i < count; i++) {

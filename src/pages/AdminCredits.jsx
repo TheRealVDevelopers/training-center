@@ -17,6 +17,8 @@ export default function AdminCredits() {
   const [busy, setBusy] = useState(false)
   const [nfcMsg, setNfcMsg] = useState('')
   const [nfcBusy, setNfcBusy] = useState(false)
+  const [findMsg, setFindMsg] = useState('')
+  const [finding, setFinding] = useState(false)
 
   useEffect(() => subscribeMembers(setMembers), [])
 
@@ -30,6 +32,33 @@ export default function AdminCredits() {
 
   const sel = members.find((m) => m.id === selected) || null
 
+  // Tap a member's own card to pull them up instantly — no searching.
+  function tapToSelect() {
+    setFindMsg('Tap the member’s card on the reader…')
+    setFinding(true)
+    document.activeElement?.blur()
+    let cancelBridge
+    let cancelKb
+    let timer
+    let done = false
+    const finish = (code) => {
+      if (done) return
+      done = true
+      if (cancelBridge) cancelBridge()
+      if (cancelKb) cancelKb()
+      clearTimeout(timer)
+      setFinding(false)
+      if (!code) { setFindMsg('Didn’t catch a card — click and tap again.'); return }
+      const m = members.find((x) => x.cardUid === code || x.memberToken === code)
+      if (!m) { setFindMsg(`Card ${code} isn’t assigned to anyone yet.`); return }
+      setSelected(m.id)
+      setFindMsg(`✓ ${m.name} · balance ${CURRENCY}${m.balance || 0}`)
+    }
+    cancelBridge = captureNextCard(finish)
+    cancelKb = captureOneCard(finish)
+    timer = setTimeout(() => finish(''), 25000)
+  }
+
   async function submit(e) {
     e.preventDefault()
     setMsg('')
@@ -42,7 +71,7 @@ export default function AdminCredits() {
     try {
       // Capture method + reference so a daily "cash collected vs credited" check is possible.
       const note = `Top-up · ${method}${ref ? ` · ${ref}` : ''}`
-      await addCredit(sel.id, amt, note)
+      await addCredit(sel.id, amt, note, { method, ref })
       setMsg(`Added ${CURRENCY}${amt} to ${sel.name}.`)
       setAmount('')
       setRef('')
@@ -112,6 +141,11 @@ export default function AdminCredits() {
       </header>
 
       <div className="card">
+        <button className="btn primary block" onClick={tapToSelect} disabled={finding}>
+          💳 {finding ? 'Tap the card now…' : 'Tap card to find member'}
+        </button>
+        {findMsg && <div className="banner" style={{ marginTop: 8 }}>{findMsg}</div>}
+        <div className="muted small" style={{ margin: '12px 0 4px' }}>— or search —</div>
         <label>Search member (name or mobile)</label>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Type to filter…" />
         <div className="memberlist">
@@ -139,7 +173,14 @@ export default function AdminCredits() {
           <div className="muted small">Current balance: {CURRENCY}{sel.balance || 0}</div>
 
           <label>Amount ({CURRENCY})</label>
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="numeric" />
+          <div className="amt-presets">
+            {[300, 600, 900, 1500, 3000].map((v) => (
+              <button type="button" key={v} className={`amt-chip ${Number(amount) === v ? 'on' : ''}`} onClick={() => setAmount(String(v))}>
+                {CURRENCY}{v}
+              </button>
+            ))}
+          </div>
+          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="numeric" placeholder="Custom amount" />
 
           <label>Payment method</label>
           <select value={method} onChange={(e) => setMethod(e.target.value)}>
