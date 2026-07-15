@@ -128,6 +128,16 @@ function Panel({ logout }) {
           <span className="station-t">Daily report</span>
           <span className="station-s">Attendance · cash reconciliation</span>
         </Link>
+        <Link className="station-tile" to="/station" target="_blank">
+          <span className="station-ico">🎛️</span>
+          <span className="station-t">Station Hub</span>
+          <span className="station-s">Registration PC · both door readers</span>
+        </Link>
+        <Link className="station-tile" to="/feed" target="_blank">
+          <span className="station-ico">📡</span>
+          <span className="station-t">Gate Feed</span>
+          <span className="station-s">Door tablets · live ✓/✗ stream</span>
+        </Link>
         <Link className="station-tile" to="/door?gate=1" target="_blank">
           <span className="station-ico">🚪</span>
           <span className="station-t">Door 1</span>

@@ -208,6 +208,9 @@ export default function AdminCredits() {
           <button className="btn primary block" onClick={assignViaReader} disabled={nfcBusy}>
             💳 {nfcBusy ? 'Tap the card now…' : 'Assign card (USB reader)'}
           </button>
+          <Link className="btn block" to={`/admin/card/${sel.id}`} target="_blank">
+            🖨 Print personalised card
+          </Link>
           {nfcSupported() && (
             <button className="btn block" onClick={issueCard} disabled={nfcBusy}>
               📶 Write card (phone NFC)

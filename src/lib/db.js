@@ -9,6 +9,7 @@ import {
   query,
   where,
   limit,
+  orderBy,
   onSnapshot,
   runTransaction,
   serverTimestamp,
@@ -172,6 +173,23 @@ export async function checkOutMember(memberIdValue, session) {
 
 export async function updateMemberProfile(uid, data) {
   await updateDoc(doc(db, 'members', uid), data)
+}
+
+export async function getMember(id) {
+  const snap = await getDoc(doc(db, 'members', id))
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null
+}
+
+// ---- Gate scan feed --------------------------------------------------------
+// Every gate tap (accepted or denied) is logged so the door staff's tablets
+// can show a live green-tick / red-cross stream. Fire-and-forget.
+export function logScanEvent(evt) {
+  addDoc(collection(db, 'scanEvents'), { ...evt, at: serverTimestamp() }).catch(() => {})
+}
+
+export function subscribeScanEvents(cb, max = 40) {
+  const q = query(collection(db, 'scanEvents'), orderBy('at', 'desc'), limit(max))
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
 }
 
 export async function uploadPhoto(path, file) {

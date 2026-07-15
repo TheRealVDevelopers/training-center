@@ -14,6 +14,9 @@ import SuperAdmin from './pages/SuperAdmin'
 import Profile from './pages/Profile'
 import CardScan from './pages/CardScan'
 import Door from './pages/Door'
+import Station from './pages/Station'
+import GateFeed from './pages/GateFeed'
+import CardPrint from './pages/CardPrint'
 
 export default function App() {
   const { loading } = useAuth()
@@ -31,6 +34,9 @@ export default function App() {
       <Route path="/scan" element={<CodeGate kind="scanner" label="Scanner"><Scan /></CodeGate>} />
       <Route path="/card" element={<CodeGate kind="scanner" label="Card Scanner"><CardScan /></CodeGate>} />
       <Route path="/door" element={<CodeGate kind="scanner" label="Door"><Door /></CodeGate>} />
+      <Route path="/station" element={<CodeGate kind="admin" label="Station Hub"><Station /></CodeGate>} />
+      <Route path="/feed" element={<CodeGate kind="scanner" label="Gate Feed"><GateFeed /></CodeGate>} />
+      <Route path="/admin/card/:id" element={<CodeGate kind="admin" label="Print Card"><CardPrint /></CodeGate>} />
       <Route path="/admin" element={<CodeGate kind="admin" label="Admin"><AdminDashboard /></CodeGate>} />
       <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
       <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />
