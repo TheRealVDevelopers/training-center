@@ -822,38 +822,44 @@ a:hover { text-decoration: underline; }
    pass) instead of stacking Y+M+C — that is what removes the double/ghost
    edges. Color lives only in the guilloché, edge bar, accent, chip & waves. */
 .pr-face {
-  background: #fbf9f2; color: #000; border: 1px solid #e6e0d0;
-  padding: 4.2mm 5mm 3.8mm 7.4mm; font-family: var(--font-display);
-  display: flex; flex-direction: column; overflow: hidden;
-  print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  color: #fff; border: none; font-family: var(--font-display); position: relative;
+  overflow: hidden; print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
-.pr-edge { position: absolute; left: 0; top: 0; bottom: 0; width: 3.2mm; }
-.pr-guilloche { position: absolute; right: -8mm; top: 50%; transform: translateY(-50%); width: 56mm; height: 56mm; opacity: 0.13; pointer-events: none; }
-.pr-face > *:not(.pr-edge):not(.pr-guilloche) { position: relative; z-index: 1; }
+.pr-guilloche { position: absolute; right: -6mm; top: -8mm; width: 52mm; height: 52mm; opacity: 0.16; pointer-events: none; z-index: 0; }
+.pr-frame { position: absolute; inset: 1.4mm; border: 0.3mm solid rgba(255, 255, 255, 0.42); border-radius: 2.4mm; pointer-events: none; z-index: 3; }
 
-.pr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 3mm; }
-.pr-club { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.13em; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Color zone (top) with chip + club, over the level-color background */
+.pr-colorzone { position: relative; z-index: 1; padding: 4.2mm 5mm 0; }
+.pr-toprow { display: flex; justify-content: space-between; align-items: center; gap: 3mm; }
+.pr-club { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.14em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pr-waves { width: 6mm; height: 6mm; flex: none; }
-.pr-chiprow { display: flex; align-items: center; gap: 2.4mm; margin-top: 2.6mm; }
+.pr-chiprow { display: flex; align-items: center; gap: 2.6mm; margin-top: 3mm; }
 .pr-chip { width: 10.5mm; height: 8.4mm; }
-.pr-nfc { font-size: 2mm; font-weight: 800; letter-spacing: 0.18em; }
-.pr-level { font-size: 6.6mm; font-weight: 800; letter-spacing: 0.01em; line-height: 1.0; margin-top: 3mm; color: #000; max-width: 54mm; }
-.pr-accent { display: block; height: 1.1mm; width: 24mm; border-radius: 1mm; margin-top: 1.6mm; }
-.pr-bottom { margin-top: auto; }
-.pr-lbl { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.24em; color: #333; }
-.pr-name { font-size: 5.2mm; font-weight: 800; letter-spacing: 0.03em; margin-top: 0.6mm; line-height: 1.05; color: #000; }
-.pr-meta { display: flex; flex-wrap: wrap; gap: 1.2mm 3mm; font-size: 2.3mm; font-weight: 700; letter-spacing: 0.03em; margin-top: 1.6mm; color: #000; }
+.pr-nfc { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.9); }
+
+/* Ivory info panel — ALL text pure black here, so it prints razor-sharp */
+.pr-panel {
+  position: absolute; left: 1.4mm; right: 1.4mm; bottom: 1.4mm; z-index: 2;
+  background: #fbf9f2; color: #000; border-radius: 2mm; padding: 2.8mm 4mm 3mm;
+  box-shadow: 0 0.4mm 0 rgba(0, 0, 0, 0.05);
+}
+.pr-plevel { font-size: 5.4mm; font-weight: 800; letter-spacing: 0.01em; line-height: 1.0; }
+.pr-accent { display: block; height: 1mm; width: 20mm; border-radius: 1mm; margin: 1.2mm 0; }
+.pr-name { font-size: 4.4mm; font-weight: 800; letter-spacing: 0.03em; line-height: 1.05; color: #000; }
+.pr-meta { display: flex; flex-wrap: wrap; gap: 0.8mm 2.6mm; font-size: 2.2mm; font-weight: 700; letter-spacing: 0.02em; margin-top: 1.2mm; color: #000; }
 .pr-meta b { font-weight: 800; }
 
-.pr-tap { text-align: center; font-size: 5.4mm; font-weight: 800; letter-spacing: 0.07em; margin-top: 0.4mm; color: #000; }
-.pr-bgrid { display: flex; gap: 4mm; margin-top: 2.6mm; flex: 1; align-items: center; }
-.pr-scanlbl { font-size: 2.3mm; font-weight: 800; letter-spacing: 0.07em; margin-bottom: 1.4mm; color: #000; }
-.pr-qr { background: #fff; padding: 1.2mm; border: 0.3mm solid #ccc; border-radius: 1.6mm; width: -moz-fit-content; width: fit-content; }
+/* Back — a near-full ivory panel with a thin level-color frame around it */
+.pr-backpanel { top: 1.4mm; display: flex; flex-direction: column; padding: 3.4mm 4.4mm 2.8mm; }
+.pr-tap { text-align: center; font-size: 5.2mm; font-weight: 800; letter-spacing: 0.06em; color: #000; }
+.pr-bgrid { display: flex; gap: 4mm; margin-top: 2.4mm; flex: 1; align-items: center; }
+.pr-scanlbl { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.07em; margin-bottom: 1.3mm; color: #000; }
+.pr-qr { background: #fff; padding: 1.1mm; border: 0.3mm solid #ccc; border-radius: 1.5mm; width: -moz-fit-content; width: fit-content; }
 .pr-qr canvas { width: 20mm !important; height: 20mm !important; display: block; }
-.pr-contact { flex: 1; display: flex; flex-direction: column; gap: 1.4mm; align-items: flex-end; text-align: right; font-size: 2.8mm; font-weight: 700; min-width: 0; color: #000; }
-.pr-cname { font-size: 3.3mm; font-weight: 800; letter-spacing: 0.02em; }
+.pr-contact { flex: 1; display: flex; flex-direction: column; gap: 1.3mm; align-items: flex-end; text-align: right; font-size: 2.7mm; font-weight: 700; min-width: 0; color: #000; }
+.pr-cname { font-size: 3.2mm; font-weight: 800; letter-spacing: 0.02em; }
 .pr-mail { white-space: nowrap; }
-.pr-note { font-size: 1.9mm; font-weight: 600; color: #333; margin-top: 1.6mm; max-width: 44mm; line-height: 1.45; }
+.pr-note { font-size: 1.85mm; font-weight: 600; color: #333; margin-top: 1.4mm; max-width: 44mm; line-height: 1.45; }
 .pr-power { text-align: center; font-size: 1.7mm; font-weight: 800; letter-spacing: 0.1em; color: #555; margin-top: auto; padding-top: 1mm; white-space: nowrap; }
 
 /* Screen: hide the print zone. Print: show ONLY the print zone. */

@@ -158,37 +158,37 @@ function CardFace({ member, tier, side, print }) {
   const img = side === 'front' ? tier.frontImage : tier.backImage
   const ac = tier.printAccent
 
+  const grad = `linear-gradient(135deg, ${ac} 0%, ${tier.bgDark || ac} 100%)`
+
   return (
-    <div className={`pc-face cs-face pr-face ${print ? 'print' : ''}`}>
+    <div className={`pc-face cs-face pr-face ${print ? 'print' : ''}`} style={{ background: grad }}>
       {img && <img className="pc-bg" src={img} alt="" />}
-      <Guilloche color={ac} />
-      <span className="pr-edge" style={{ background: ac }} />
+      <Guilloche color="#ffffff" />
+      <span className="pr-frame" />
 
       {side === 'front' ? (
         <>
-          <div className="pr-top">
-            <span className="pr-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
-            <Waves color={ac} />
+          <div className="pr-colorzone">
+            <div className="pr-toprow">
+              <span className="pr-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
+              <Waves color="#ffffff" />
+            </div>
+            <div className="pr-chiprow"><Chip /><span className="pr-nfc">NFC · TAP TO ENTER</span></div>
           </div>
-          <div className="pr-chiprow">
-            <Chip />
-            <span className="pr-nfc" style={{ color: ac }}>NFC</span>
-          </div>
-          <div className="pr-level">{tier.label.toUpperCase()}</div>
-          <span className="pr-accent" style={{ background: ac }} />
-          <div className="pr-bottom">
-            <div className="pr-lbl">MEMBER</div>
+          <div className="pr-panel">
+            <div className="pr-plevel" style={{ color: ac }}>{tier.label.toUpperCase()}</div>
+            <span className="pr-accent" style={{ background: ac }} />
             <div className="pr-name">{(member.name || '').toUpperCase()}</div>
             <div className="pr-meta">
               <span><b>ID</b> {serial}</span>
               {since && <span><b>SINCE</b> {since}</span>}
-              {hasYrs && <span><b>{yrs}</b> YRS IN HERBALIFE</span>}
-              {member.city && <span><b>{member.city.toUpperCase()}</b></span>}
+              {hasYrs && <span><b>{yrs}</b> YRS · HERBALIFE</span>}
+              {member.city && <span>{member.city.toUpperCase()}</span>}
             </div>
           </div>
         </>
       ) : (
-        <>
+        <div className="pr-panel pr-backpanel">
           <div className="pr-tap">TAP TO ENTER <span style={{ color: ac }}>)))</span></div>
           <div className="pr-bgrid">
             <div>
@@ -205,7 +205,7 @@ function CardFace({ member, tier, side, print }) {
             </div>
           </div>
           <div className="pr-power">POWERED BY THE REAL V DEVELOPERS · THEREALVDEVELOPERS.IN</div>
-        </>
+        </div>
       )}
     </div>
   )
