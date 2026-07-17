@@ -13,6 +13,7 @@ import {
 import { useWakeLock } from '../lib/wakeLock'
 import { useCardWedge } from '../lib/wedge'
 import { useLocalReader } from '../lib/localReader'
+import { normalizeCode } from '../lib/readerId'
 import { feedback, primeAudio } from '../lib/feedback'
 
 // The MAIN live board. Streams every tap: green ✓ = entered, red ✗ = low
@@ -29,6 +30,8 @@ export default function GateFeed({ control = false }) {
   const sessionRef = useRef(null)
   const membersRef = useRef([])
   const recent = useRef(new Map())
+  const catcher = useRef(null)
+  const flushTimer = useRef(null)
 
   useWakeLock(true)
   useEffect(() => subscribeScanEvents(setEvents, 50), [])
@@ -63,8 +66,35 @@ export default function GateFeed({ control = false }) {
     else if (res.reason === 'nosession') logScanEvent({ gate: 'desk', ok: false, kind: 'nosession', name: '', photoURL: '', mobile: '', credits: 0 })
     else logScanEvent({ gate: 'desk', ok: false, kind: 'notreg', name: '', photoURL: '', mobile: '', credits: 0 })
   }
-  useCardWedge(onScan, control) // QR gun / keyboard-mode reader
+  useCardWedge(onScan, control) // QR gun / keyboard-mode reader (fallback)
   useLocalReader(control ? onScan : () => {}) // ACR122U via the bridge
+
+  // Keep a hidden input focused so a keyboard-style QR gun ALWAYS types into it
+  // (never leaks the code into random fields). Re-grabs focus if anything steals it.
+  useEffect(() => {
+    if (!control) return undefined
+    const grab = () => { const el = catcher.current; if (el && document.activeElement !== el) el.focus() }
+    grab()
+    const id = setInterval(grab, 400)
+    window.addEventListener('focus', grab)
+    return () => { clearInterval(id); window.removeEventListener('focus', grab) }
+  }, [control])
+
+  function flushCatcher() {
+    const el = catcher.current
+    if (!el) return
+    const v = el.value.trim()
+    el.value = ''
+    if (v.length >= 3) onScan(normalizeCode(v))
+  }
+  function onCatcherKey(e) {
+    if (e.key === 'Enter') { if (flushTimer.current) clearTimeout(flushTimer.current); flushCatcher() }
+  }
+  function onCatcherInput() {
+    // Guns that don't send Enter: flush after the burst pauses.
+    if (flushTimer.current) clearTimeout(flushTimer.current)
+    flushTimer.current = setTimeout(flushCatcher, 160)
+  }
 
   const checkedIn = useMemo(() => bookings.filter((b) => b.status === 'checked_in'), [bookings])
   const insideNow = checkedIn.filter((b) => !b.exitedAt).reduce((n, b) => n + (b.peopleCount || 0), 0)
@@ -91,11 +121,20 @@ export default function GateFeed({ control = false }) {
   }
 
   return (
-    <div className="gfeed">
+    <div className="gfeed" onClick={() => control && catcher.current?.focus()}>
+      {control && (
+        <input
+          ref={catcher} className="scan-catcher" inputMode="none" autoFocus autoComplete="off"
+          aria-label="Scan capture" onKeyDown={onCatcherKey} onInput={onCatcherInput}
+        />
+      )}
       <header className="gfeed-top">
         <div>
           <div className="gfeed-title">🌿 Live Board{gateFilter ? ` · ${gateFilter.replace('gate', 'Door ')}` : ''}</div>
-          <div className="gfeed-sub">{session ? '🟢 Session live' : '⏳ No active session'}</div>
+          <div className="gfeed-sub">
+            {session ? '🟢 Session live' : '⏳ No active session'}
+            {control && <span className="scan-ready"> · 🔴 Scanner armed</span>}
+          </div>
         </div>
         <div className="gfeed-stats">
           <div className="gfeed-count"><b>{insideNow}</b><span>inside</span></div>
