@@ -8,14 +8,15 @@
 // name / photo / QR spaces are.
 
 export const CARD_TIERS = [
+  // printAccent: dye-sub printers band on big dark fills, so cards print on a
+  // white base with a strong solid accent per tier (chosen dark enough to read
+  // on white). accent stays for on-screen dark-theme uses.
   {
     key: 'president',
     label: "President's Team",
     match: ['president'],
     accent: '#f0c75e',
-    ink: '#fdf6e3',
-    grad: 'linear-gradient(150deg, #241a06 0%, #0f0b03 55%, #2a1e08 100%)',
-    edge: 'rgba(240, 199, 94, 0.45)',
+    printAccent: '#a8790f',
     frontImage: null,
     backImage: null,
   },
@@ -24,9 +25,7 @@ export const CARD_TIERS = [
     label: 'Millionaire Team',
     match: ['millionaire'],
     accent: '#d9dde2',
-    ink: '#f4f6f8',
-    grad: 'linear-gradient(150deg, #1c2126 0%, #0b0e11 55%, #20262c 100%)',
-    edge: 'rgba(217, 221, 226, 0.4)',
+    printAccent: '#5b6772',
     frontImage: null,
     backImage: null,
   },
@@ -35,9 +34,7 @@ export const CARD_TIERS = [
     label: 'GET Team',
     match: ['get'],
     accent: '#8dff4f',
-    ink: '#eef7f0',
-    grad: 'linear-gradient(150deg, #0f2418 0%, #0a130e 55%, #0e2a19 100%)',
-    edge: 'rgba(0, 224, 122, 0.4)',
+    printAccent: '#0a8a4a',
     frontImage: null,
     backImage: null,
   },
@@ -46,9 +43,7 @@ export const CARD_TIERS = [
     label: 'Supervisor',
     match: ['supervisor'],
     accent: '#6ec6ff',
-    ink: '#eef5fb',
-    grad: 'linear-gradient(150deg, #0d1b26 0%, #080f15 55%, #0e2130 100%)',
-    edge: 'rgba(110, 198, 255, 0.4)',
+    printAccent: '#1769aa',
     frontImage: null,
     backImage: null,
   },
@@ -57,9 +52,7 @@ export const CARD_TIERS = [
     label: 'Associate / Member',
     match: [],
     accent: '#00e07a',
-    ink: '#eef7f0',
-    grad: 'linear-gradient(150deg, #0f2418 0%, #0a130e 55%, #0e2a19 100%)',
-    edge: 'rgba(0, 224, 122, 0.35)',
+    printAccent: '#067a3d',
     frontImage: null,
     backImage: null,
   },

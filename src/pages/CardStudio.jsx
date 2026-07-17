@@ -144,48 +144,49 @@ export default function CardStudio() {
 
 // One card face, exact CR80 mm geometry. When the tier has final artwork
 // (frontImage/backImage), it becomes the full-bleed background and only the
-// member fields are overlaid; until then a styled fallback in tier colors.
+// member fields are overlaid. Until then: a light print-optimized design —
+// dye-sub printers band on big dark fills, so white base + solid tier accent
+// gives the cleanest possible print.
 function CardFace({ member, tier, side, print }) {
   const serial = `TC-${(member.id || '').slice(-4).toUpperCase()}`
   const yrs = parseInt(member.years, 10)
   const joined = Number.isFinite(yrs) && yrs > 0 && yrs < 80 ? new Date().getFullYear() - yrs : null
   const img = side === 'front' ? tier.frontImage : tier.backImage
-  const style = img ? {} : { background: tier.grad, borderColor: print ? 'transparent' : tier.edge }
+  const ac = tier.printAccent
 
   return (
-    <div className={`pc-face cs-face ${print ? 'print' : ''}`} style={style}>
+    <div className={`pc-face cs-face pc-light ${print ? 'print' : ''}`} style={{ '--tier': ac }}>
       {img && <img className="pc-bg" src={img} alt="" />}
-      {!img && <div className="pc-glow" />}
 
       {side === 'front' ? (
         <>
           <div className="pc-head">
             <div className="pc-brand">
-              <span className="pc-leaf" style={{ background: `linear-gradient(135deg, ${tier.accent}, ${tier.accent}cc)` }}>🌿</span>
-              <span className="pc-club" style={{ color: tier.ink }}>SATURDAY TRAINING<small>HERBALIFE NUTRITION CLUB</small></span>
+              <span className="pc-leaf" style={{ background: ac }}>🌿</span>
+              <span className="pc-club">SATURDAY TRAINING<small>HERBALIFE NUTRITION CLUB</small></span>
             </div>
-            <span className="pc-chip" style={{ color: tier.accent, borderColor: `${tier.accent}66`, background: `${tier.accent}1f` }}>
+            <span className="pc-chip" style={{ color: ac, borderColor: `${ac}55`, background: `${ac}14` }}>
               {tier.label.toUpperCase()}
             </span>
           </div>
           <div className="pc-id">
             {member.photoURL
               ? <img className="pc-photo" src={member.photoURL} alt="" crossOrigin="anonymous" />
-              : <span className="pc-photo fb" style={{ background: `linear-gradient(140deg, ${tier.accent}, ${tier.accent}aa)` }}>{(member.name || '?')[0]}</span>}
+              : <span className="pc-photo fb" style={{ background: ac }}>{(member.name || '?')[0]}</span>}
             <div>
-              <div className="pc-name" style={{ background: 'none', WebkitTextFillColor: 'unset', color: tier.ink }}>{member.name}</div>
-              {member.position && <div className="pc-pos" style={{ color: tier.accent }}>{member.position}</div>}
+              <div className="pc-name">{member.name}</div>
+              {member.position && <div className="pc-pos" style={{ color: ac }}>{member.position}</div>}
               {member.clubName && <div className="pc-clubname">{member.clubName}</div>}
             </div>
           </div>
           <div className="pc-facts">
-            <div><b style={{ color: tier.ink }}>{joined || '—'}</b><span>JOINED</span></div>
-            <div><b style={{ color: tier.ink }}>{Number.isFinite(yrs) ? `${yrs} yrs` : '—'}</b><span>HERBALIFE</span></div>
-            <div><b style={{ color: tier.ink }}>{member.city || '—'}</b><span>CITY</span></div>
+            <div><b>{joined || '—'}</b><span>JOINED</span></div>
+            <div><b>{Number.isFinite(yrs) ? `${yrs} yrs` : '—'}</b><span>HERBALIFE</span></div>
+            <div><b>{member.city || '—'}</b><span>CITY</span></div>
           </div>
           <div className="pc-foot">
             <span>No. {serial}</span>
-            <span className="pc-tap" style={{ color: tier.accent }}>))) TAP TO ENTER</span>
+            <span className="pc-tap" style={{ color: ac }}>))) TAP TO ENTER</span>
           </div>
         </>
       ) : (
@@ -193,8 +194,8 @@ function CardFace({ member, tier, side, print }) {
           <div className="pc-bhead">))) TAP OR SCAN TO WALK IN</div>
           <div className="pc-bmid">
             <div className="pc-btext">
-              <div className="pc-bname" style={{ color: tier.ink }}>{member.name}</div>
-              <div className="pc-bsub">Member ID <b style={{ color: tier.accent }}>{serial}</b></div>
+              <div className="pc-bname">{member.name}</div>
+              <div className="pc-bsub">Member ID <b style={{ color: ac }}>{serial}</b></div>
               <div className="pc-fine"><b>No money is stored on this card</b> — your balance is safe in your account. If found, please return to the club.</div>
             </div>
             <div className="pc-qr">

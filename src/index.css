@@ -738,6 +738,27 @@ a:hover { text-decoration: underline; }
 .cs-face { box-shadow: var(--shadow-lg); }
 .pc-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
+/* Light print-optimized card face — dye-sub prints white bases far cleaner
+   than dark fills. Tier color arrives via --tier. */
+.pc-face.pc-light { background: #fff; color: #16241c; border: 1px solid #e2e7e3; }
+.pc-face.pc-light::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.6mm; background: var(--tier); }
+.pc-light .pc-club { color: #16241c; }
+.pc-light .pc-club small { color: #7c8b81; }
+.pc-light .pc-name { background: none; -webkit-background-clip: unset; background-clip: unset; -webkit-text-fill-color: unset; color: #10231a; }
+.pc-light .pc-clubname { color: #7c8b81; }
+.pc-light .pc-photo { border-color: #e9efe9; }
+.pc-light .pc-photo.fb { color: #fff; }
+.pc-light .pc-facts { border-top-color: #e6ebe7; }
+.pc-light .pc-facts b { color: #16241c; }
+.pc-light .pc-facts span { color: #7c8b81; }
+.pc-light .pc-foot > span:first-child { color: #7c8b81; }
+.pc-light .pc-bhead { color: #7c8b81; }
+.pc-light .pc-bname { color: #10231a; }
+.pc-light .pc-bsub { color: #7c8b81; }
+.pc-light .pc-fine { color: #7c8b81; }
+.pc-light .pc-fine b { color: #16241c; }
+.pc-light .pc-qr { border: 1px solid #e2e7e3; padding: 1.2mm; }
+
 /* Screen: hide the print zone. Print: show ONLY the print zone. */
 .cs-printzone { display: none; }
 @media print {
