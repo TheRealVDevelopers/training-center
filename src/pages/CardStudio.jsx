@@ -145,60 +145,75 @@ export default function CardStudio() {
   )
 }
 
-// One card face, exact CR80 mm geometry. When the tier has final artwork
-// (frontImage/backImage), it becomes the full-bleed background and only the
-// member fields are overlaid. Until then: a light print-optimized design —
-// dye-sub printers band on big dark fills, so white base + solid tier accent
-// gives the cleanest possible print.
+// One card face, exact CR80 mm geometry. Design: deep navy + antique gold,
+// serif type, gold flowing lines on the right (the approved mockup). If a tier
+// ever gets final artwork (frontImage/backImage) it replaces the background.
+const NAVY = '#1c2137'
+const GOLD = '#f0e2b6'
+
 function CardFace({ member, tier, side, print }) {
   const serial = `TC-${(member.id || '').slice(-4).toUpperCase()}`
   const yrs = parseInt(member.years, 10)
   const joined = Number.isFinite(yrs) && yrs > 0 && yrs < 80 ? new Date().getFullYear() - yrs : null
   const img = side === 'front' ? tier.frontImage : tier.backImage
-  const ac = tier.printAccent
+  const levelText = (member.position || tier.label).toUpperCase()
 
   return (
-    <div className={`pc-face cs-face pc-light ${print ? 'print' : ''}`} style={{ '--tier': ac }}>
+    <div className={`pc-face cs-face pc-navy ${print ? 'print' : ''}`}>
       {img && <img className="pc-bg" src={img} alt="" />}
+      <GoldWaves />
 
       {side === 'front' ? (
         <>
-          {/* The level IS the header — big, highlighted, full width */}
-          <div className="pc-band" style={{ background: ac }}>{tier.label.toUpperCase()}</div>
-          <div className="pc-id">
-            {member.photoURL
-              ? <img className="pc-photo" src={member.photoURL} alt="" crossOrigin="anonymous" />
-              : <span className="pc-photo fb" style={{ background: ac }}>{(member.name || '?')[0]}</span>}
-            <div>
-              <div className="pc-name">{member.name}</div>
-              {member.clubName && <div className="pc-clubname">{member.clubName}</div>}
-            </div>
+          <div className="nv-name">{(member.name || '').toUpperCase()}</div>
+          <div className="nv-level">{levelText}</div>
+          <div className="nv-rule" />
+          <div className="nv-row">
+            <span>JOINED: {joined || '—'}</span>
+            <span>CITY: {(member.city || '—').toUpperCase()}</span>
           </div>
-          <div className="pc-facts">
-            <div><b>{joined || '—'}</b><span>JOINED</span></div>
-            <div><b>{Number.isFinite(yrs) ? `${yrs} yrs` : '—'}</b><span>HERBALIFE</span></div>
-            <div><b>{member.city || '—'}</b><span>CITY</span></div>
-          </div>
-          <div className="pc-foot">
-            <span>No. {serial}</span>
-            <span className="pc-tap" style={{ color: ac }}>))) TAP TO ENTER</span>
+          <div className="nv-clubwrap">
+            <div className="nv-club">{(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</div>
+            <div className="nv-id">ID: {serial}</div>
           </div>
         </>
       ) : (
         <>
-          <div className="pc-bhead">))) TAP OR SCAN TO WALK IN</div>
-          <div className="pc-bmid">
-            <div className="pc-btext">
-              <div className="pc-bname">{member.name}</div>
-              <div className="pc-bsub">Member ID <b style={{ color: ac }}>{serial}</b></div>
-              <div className="pc-fine"><b>No money is stored on this card</b> — your balance is safe in your account. If found, please return to the club.</div>
+          <div className="nv-tap">TAP TO ENTER <span className="nv-sig">)))</span></div>
+          <div className="nv-bgrid">
+            <div>
+              <div className="nv-scanlbl">SCAN FOR PROFILE ACCESS</div>
+              <div className="nv-qr">
+                <QRCodeCanvas value={member.memberToken || serial} size={280} level="M" includeMargin={false} fgColor={NAVY} bgColor={GOLD} />
+              </div>
             </div>
-            <div className="pc-qr">
-              <QRCodeCanvas value={member.memberToken || serial} size={280} level="M" includeMargin={false} />
+            <div className="nv-contact">
+              <div className="nv-cname">{member.name}</div>
+              {member.mobile && <div>{member.mobile}</div>}
+              {member.email && <div className="nv-mail">{member.email}</div>}
+              <div className="nv-note">No money is stored on this card — balance stays safe in your account.</div>
             </div>
           </div>
         </>
       )}
     </div>
+  )
+}
+
+// The flowing gold line motif on the card's right edge.
+function GoldWaves() {
+  return (
+    <svg className="nv-waves" viewBox="0 0 60 100" preserveAspectRatio="none" aria-hidden="true">
+      {Array.from({ length: 14 }).map((_, i) => (
+        <path
+          key={i}
+          d={`M ${64 - i * 2.7} -5 C ${34 - i * 1.4} 30, ${34 - i * 1.4} 70, ${64 - i * 2.7} 105`}
+          fill="none"
+          stroke="#c9a961"
+          strokeWidth="0.35"
+          opacity="0.55"
+        />
+      ))}
+    </svg>
   )
 }

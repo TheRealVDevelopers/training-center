@@ -764,6 +764,31 @@ a:hover { text-decoration: underline; }
 .pc-light .pc-fine b { color: #000; }
 .pc-light .pc-qr { border: 1px solid #e2e7e3; padding: 1.2mm; }
 
+/* ---- Navy + gold card (approved design) ---- */
+.pc-face.pc-navy {
+  background: #1c2137; color: #f0e2b6; border: none; padding: 4.6mm 5.2mm;
+  font-family: 'Playfair Display', Georgia, serif;
+  print-color-adjust: exact; -webkit-print-color-adjust: exact;
+}
+.nv-waves { position: absolute; right: 0; top: 0; height: 100%; width: 26mm; pointer-events: none; }
+.nv-name { font-size: 6mm; font-weight: 600; letter-spacing: 0.04em; line-height: 1.05; }
+.nv-level { font-size: 3.3mm; font-weight: 500; letter-spacing: 0.09em; margin: 1.4mm 0 0 1.6mm; }
+.nv-rule { height: 0.45mm; background: #f0e2b6; margin: 2.4mm 0 2.6mm; position: relative; z-index: 1; }
+.nv-row { display: flex; justify-content: space-between; font-size: 3mm; font-weight: 500; letter-spacing: 0.04em; }
+.nv-clubwrap { margin-top: auto; text-align: center; padding-bottom: 0.6mm; }
+.nv-club { font-size: 4.5mm; font-weight: 600; letter-spacing: 0.05em; }
+.nv-id { font-size: 2.8mm; margin-top: 1mm; letter-spacing: 0.08em; }
+.nv-tap { text-align: center; font-size: 5.4mm; font-weight: 600; letter-spacing: 0.06em; margin-top: 0.6mm; }
+.nv-sig { font-size: 4mm; letter-spacing: -0.06em; }
+.nv-bgrid { display: flex; gap: 4mm; margin-top: 2.6mm; flex: 1; align-items: center; }
+.nv-scanlbl { font-size: 2.5mm; font-weight: 500; letter-spacing: 0.06em; margin-bottom: 1.4mm; }
+.nv-qr { background: #f0e2b6; padding: 1.3mm; border-radius: 1.6mm; width: -moz-fit-content; width: fit-content; }
+.nv-qr canvas { width: 19.5mm !important; height: 19.5mm !important; display: block; }
+.nv-contact { flex: 1; display: flex; flex-direction: column; gap: 1.5mm; align-items: flex-end; text-align: right; font-size: 2.9mm; font-weight: 500; min-width: 0; }
+.nv-cname { font-size: 3.3mm; font-weight: 600; letter-spacing: 0.03em; }
+.nv-mail { word-break: break-all; }
+.nv-note { font-size: 1.9mm; opacity: 0.85; margin-top: 1.6mm; max-width: 40mm; line-height: 1.45; }
+
 /* ---- Printer test card ---- */
 .tc-face { background: #fff; color: #111; display: flex; flex-direction: column; gap: 1.8mm; padding: 3.6mm 4mm; }
 .tc-frame { position: absolute; inset: 0.6mm; border: 0.4mm solid #000; pointer-events: none; }
