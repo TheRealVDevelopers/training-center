@@ -204,6 +204,7 @@ function CardFace({ member, tier, side, print }) {
               <div className="bc-note">No money is stored on this card — balance stays safe in your account.</div>
             </div>
           </div>
+          <div className="bc-power">POWERED BY THE REAL V DEVELOPERS · THEREALVDEVELOPERS.IN</div>
         </>
       )}
     </div>

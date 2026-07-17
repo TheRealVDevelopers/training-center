@@ -843,6 +843,7 @@ a:hover { text-decoration: underline; }
 .bc-cname { font-size: 3.3mm; font-weight: 800; letter-spacing: 0.03em; }
 .bc-mail { white-space: nowrap; }
 .bc-note { font-size: 1.9mm; font-weight: 600; opacity: 0.9; margin-top: 1.6mm; max-width: 42mm; line-height: 1.45; }
+.bc-power { text-align: center; font-size: 1.8mm; font-weight: 800; letter-spacing: 0.12em; opacity: 0.85; margin-top: auto; padding-top: 1.2mm; white-space: nowrap; }
 
 /* Screen: hide the print zone. Print: show ONLY the print zone. */
 .cs-printzone { display: none; }
