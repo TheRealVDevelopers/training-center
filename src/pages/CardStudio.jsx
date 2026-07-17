@@ -153,68 +153,99 @@ export default function CardStudio() {
 function CardFace({ member, tier, side, print }) {
   const serial = `TC-${(member.id || '').slice(-4).toUpperCase()}`
   const yrs = parseInt(member.years, 10)
-  const joined = Number.isFinite(yrs) && yrs > 0 && yrs < 80 ? new Date().getFullYear() - yrs : null
+  const hasYrs = Number.isFinite(yrs) && yrs > 0 && yrs < 80
+  const since = hasYrs ? new Date().getFullYear() - yrs : null
   const img = side === 'front' ? tier.frontImage : tier.backImage
-  const grad = `linear-gradient(135deg, ${tier.printAccent} 0%, ${tier.bgDark || tier.printAccent} 100%)`
+  const ac = tier.printAccent
 
   return (
-    <div className={`pc-face cs-face bc-face ${print ? 'print' : ''}`} style={{ background: grad }}>
+    <div className={`pc-face cs-face pr-face ${print ? 'print' : ''}`}>
       {img && <img className="pc-bg" src={img} alt="" />}
+      <Guilloche color={ac} />
+      <span className="pr-edge" style={{ background: ac }} />
 
       {side === 'front' ? (
         <>
-          <div className="bc-club" style={{ fontSize: (member.clubName || '').length > 28 ? '1.9mm' : '2.2mm' }}>
-            🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}
+          <div className="pr-top">
+            <span className="pr-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
+            <Waves color={ac} />
           </div>
-          <div className="bc-levelrow"><span className="bc-level">{tier.label.toUpperCase()}</span></div>
-          <div className="bc-chiprow">
+          <div className="pr-chiprow">
             <Chip />
-            <svg className="bc-cwaves" viewBox="0 0 24 24" aria-hidden="true">
-              {[5, 10, 15].map((r) => (
-                <path key={r} d={`M ${6 + r * 0.2} ${12 - r} A ${r} ${r} 0 0 1 ${6 + r * 0.2} ${12 + r}`} fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" opacity="0.9" />
-              ))}
-            </svg>
+            <span className="pr-nfc" style={{ color: ac }}>NFC</span>
           </div>
-          <div className="bc-bottom">
-            <div className="bc-lbl">MEMBER</div>
-            <div className="bc-name">{(member.name || '').toUpperCase()}</div>
-            <div className="bc-meta">
-              ID: {serial}{joined ? `   JOINED: ${joined}` : ''}{member.city ? `   ${member.city.toUpperCase()}` : ''}
+          <div className="pr-level">{tier.label.toUpperCase()}</div>
+          <span className="pr-accent" style={{ background: ac }} />
+          <div className="pr-bottom">
+            <div className="pr-lbl">MEMBER</div>
+            <div className="pr-name">{(member.name || '').toUpperCase()}</div>
+            <div className="pr-meta">
+              <span><b>ID</b> {serial}</span>
+              {since && <span><b>SINCE</b> {since}</span>}
+              {hasYrs && <span><b>{yrs}</b> YRS IN HERBALIFE</span>}
+              {member.city && <span><b>{member.city.toUpperCase()}</b></span>}
             </div>
           </div>
         </>
       ) : (
         <>
-          <div className="bc-tap">TAP TO ENTER <span className="bc-sig">)))</span></div>
-          <div className="bc-bgrid">
+          <div className="pr-tap">TAP TO ENTER <span style={{ color: ac }}>)))</span></div>
+          <div className="pr-bgrid">
             <div>
-              <div className="bc-scanlbl">SCAN FOR PROFILE ACCESS</div>
-              <div className="bc-qr">
-                <QRCodeCanvas value={member.memberToken || serial} size={280} level="M" includeMargin={false} fgColor="#111111" bgColor="#ffffff" />
-              </div>
+              <div className="pr-scanlbl">SCAN FOR PROFILE ACCESS</div>
+              <div className="pr-qr"><QRCodeCanvas value={member.memberToken || serial} size={300} level="M" includeMargin={false} fgColor="#000000" bgColor="#ffffff" /></div>
             </div>
-            <div className="bc-contact">
-              <div className="bc-cname">{member.name}</div>
+            <div className="pr-contact">
+              <div className="pr-cname">{member.name}</div>
               {member.mobile && <div>{member.mobile}</div>}
               {member.email && (
-                <div className="bc-mail" style={{ fontSize: member.email.length > 32 ? '1.9mm' : member.email.length > 26 ? '2.2mm' : '2.6mm' }}>
-                  {member.email}
-                </div>
+                <div className="pr-mail" style={{ fontSize: member.email.length > 32 ? '1.9mm' : member.email.length > 26 ? '2.2mm' : '2.6mm' }}>{member.email}</div>
               )}
-              <div className="bc-note">No money is stored on this card — balance stays safe in your account.</div>
+              <div className="pr-note">No money is stored on this card — your balance stays safe in your account.</div>
             </div>
           </div>
-          <div className="bc-power">POWERED BY THE REAL V DEVELOPERS · THEREALVDEVELOPERS.IN</div>
+          <div className="pr-power">POWERED BY THE REAL V DEVELOPERS · THEREALVDEVELOPERS.IN</div>
         </>
       )}
     </div>
   )
 }
 
+// Guilloché rosette (hypotrochoid) — the fine spirograph line-work found on
+// premium bank cards and currency, drawn in the level's color.
+function Guilloche({ color }) {
+  const R = 5, r = 3, d = 2.3, turns = 3, steps = 900, cx = 50, cy = 50, s = 4.7
+  let pts = ''
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * Math.PI * 2 * turns
+    const x = (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t)
+    const y = (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t)
+    pts += `${(cx + x * s).toFixed(2)},${(cy + y * s).toFixed(2)} `
+  }
+  return (
+    <svg className="pr-guilloche" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="0.22" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="0.22" transform="rotate(15 50 50)" opacity="0.7" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="0.22" transform="rotate(30 50 50)" opacity="0.4" />
+    </svg>
+  )
+}
+
+// Contactless waves in the level color.
+function Waves({ color }) {
+  return (
+    <svg className="pr-waves" viewBox="0 0 24 24" aria-hidden="true">
+      {[5, 9.5, 14].map((r) => (
+        <path key={r} d={`M ${6} ${12 - r} A ${r} ${r} 0 0 1 ${6} ${12 + r}`} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      ))}
+    </svg>
+  )
+}
+
 // Gold EMV-style chip: shows members there's a real chip inside the card.
 function Chip() {
   return (
-    <svg className="bc-chip" viewBox="0 0 30 24" aria-hidden="true">
+    <svg className="pr-chip" viewBox="0 0 30 24" aria-hidden="true">
       <defs>
         <linearGradient id="chipgold" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#f6dc93" />

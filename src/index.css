@@ -817,33 +817,44 @@ a:hover { text-decoration: underline; }
 .tc-black { background: #000; align-items: center; justify-content: center; }
 .tc-black-label { color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 3.2mm; letter-spacing: 0.08em; text-align: center; }
 
-/* ---- Bank-card design: level color = card background, bold white text ---- */
-.bc-face {
-  color: #fff; border: none; padding: 4.4mm 5mm;
-  font-family: var(--font-display); display: flex; flex-direction: column;
+/* ---- Premium light card: ivory base, guilloché, ALL-BLACK sharp text ----
+   Every letter is pure #000 so the printer uses its K resin panel (one sharp
+   pass) instead of stacking Y+M+C — that is what removes the double/ghost
+   edges. Color lives only in the guilloché, edge bar, accent, chip & waves. */
+.pr-face {
+  background: #fbf9f2; color: #000; border: 1px solid #e6e0d0;
+  padding: 4.2mm 5mm 3.8mm 7.4mm; font-family: var(--font-display);
+  display: flex; flex-direction: column; overflow: hidden;
   print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
-.bc-club { font-weight: 800; letter-spacing: 0.12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.bc-levelrow { margin-top: 1.6mm; }
-.bc-level { display: inline-block; font-size: 2.6mm; font-weight: 800; letter-spacing: 0.1em; white-space: nowrap; border: 0.35mm solid rgba(255,255,255,0.85); border-radius: 999px; padding: 1mm 3mm; }
-.bc-chiprow { display: flex; align-items: center; gap: 2.6mm; margin-top: 3.4mm; }
-.bc-chip { width: 10.5mm; height: 8.4mm; }
-.bc-cwaves { width: 6.5mm; height: 6.5mm; }
-.bc-bottom { margin-top: auto; }
-.bc-lbl { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.24em; opacity: 0.85; }
-.bc-name { font-size: 5mm; font-weight: 800; letter-spacing: 0.06em; margin-top: 1mm; line-height: 1.08; }
-.bc-meta { font-size: 2.5mm; font-weight: 700; letter-spacing: 0.06em; margin-top: 1.4mm; white-space: pre; opacity: 0.95; }
-.bc-tap { text-align: center; font-size: 5.2mm; font-weight: 800; letter-spacing: 0.08em; margin-top: 0.6mm; }
-.bc-sig { letter-spacing: -0.06em; }
-.bc-bgrid { display: flex; gap: 4mm; margin-top: 2.8mm; flex: 1; align-items: center; }
-.bc-scanlbl { font-size: 2.4mm; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 1.4mm; }
-.bc-qr { background: #fff; padding: 1.4mm; border-radius: 1.8mm; width: -moz-fit-content; width: fit-content; }
-.bc-qr canvas { width: 19.5mm !important; height: 19.5mm !important; display: block; }
-.bc-contact { flex: 1; display: flex; flex-direction: column; gap: 1.5mm; align-items: flex-end; text-align: right; font-size: 2.9mm; font-weight: 700; min-width: 0; }
-.bc-cname { font-size: 3.3mm; font-weight: 800; letter-spacing: 0.03em; }
-.bc-mail { white-space: nowrap; }
-.bc-note { font-size: 1.9mm; font-weight: 600; opacity: 0.9; margin-top: 1.6mm; max-width: 42mm; line-height: 1.45; }
-.bc-power { text-align: center; font-size: 1.8mm; font-weight: 800; letter-spacing: 0.12em; opacity: 0.85; margin-top: auto; padding-top: 1.2mm; white-space: nowrap; }
+.pr-edge { position: absolute; left: 0; top: 0; bottom: 0; width: 3.2mm; }
+.pr-guilloche { position: absolute; right: -8mm; top: 50%; transform: translateY(-50%); width: 56mm; height: 56mm; opacity: 0.13; pointer-events: none; }
+.pr-face > *:not(.pr-edge):not(.pr-guilloche) { position: relative; z-index: 1; }
+
+.pr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 3mm; }
+.pr-club { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.13em; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-waves { width: 6mm; height: 6mm; flex: none; }
+.pr-chiprow { display: flex; align-items: center; gap: 2.4mm; margin-top: 2.6mm; }
+.pr-chip { width: 10.5mm; height: 8.4mm; }
+.pr-nfc { font-size: 2mm; font-weight: 800; letter-spacing: 0.18em; }
+.pr-level { font-size: 6.6mm; font-weight: 800; letter-spacing: 0.01em; line-height: 1.0; margin-top: 3mm; color: #000; max-width: 54mm; }
+.pr-accent { display: block; height: 1.1mm; width: 24mm; border-radius: 1mm; margin-top: 1.6mm; }
+.pr-bottom { margin-top: auto; }
+.pr-lbl { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.24em; color: #333; }
+.pr-name { font-size: 5.2mm; font-weight: 800; letter-spacing: 0.03em; margin-top: 0.6mm; line-height: 1.05; color: #000; }
+.pr-meta { display: flex; flex-wrap: wrap; gap: 1.2mm 3mm; font-size: 2.3mm; font-weight: 700; letter-spacing: 0.03em; margin-top: 1.6mm; color: #000; }
+.pr-meta b { font-weight: 800; }
+
+.pr-tap { text-align: center; font-size: 5.4mm; font-weight: 800; letter-spacing: 0.07em; margin-top: 0.4mm; color: #000; }
+.pr-bgrid { display: flex; gap: 4mm; margin-top: 2.6mm; flex: 1; align-items: center; }
+.pr-scanlbl { font-size: 2.3mm; font-weight: 800; letter-spacing: 0.07em; margin-bottom: 1.4mm; color: #000; }
+.pr-qr { background: #fff; padding: 1.2mm; border: 0.3mm solid #ccc; border-radius: 1.6mm; width: -moz-fit-content; width: fit-content; }
+.pr-qr canvas { width: 20mm !important; height: 20mm !important; display: block; }
+.pr-contact { flex: 1; display: flex; flex-direction: column; gap: 1.4mm; align-items: flex-end; text-align: right; font-size: 2.8mm; font-weight: 700; min-width: 0; color: #000; }
+.pr-cname { font-size: 3.3mm; font-weight: 800; letter-spacing: 0.02em; }
+.pr-mail { white-space: nowrap; }
+.pr-note { font-size: 1.9mm; font-weight: 600; color: #333; margin-top: 1.6mm; max-width: 44mm; line-height: 1.45; }
+.pr-power { text-align: center; font-size: 1.7mm; font-weight: 800; letter-spacing: 0.1em; color: #555; margin-top: auto; padding-top: 1mm; white-space: nowrap; }
 
 /* Screen: hide the print zone. Print: show ONLY the print zone. */
 .cs-printzone { display: none; }

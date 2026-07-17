@@ -22,7 +22,7 @@ export const CARD_TIERS = [
     label: 'Millionaire Team 7500',
     match: ['7500'],
     accent: '#f0c75e',
-    printAccent: '#a8790f', // gold
+    printAccent: '#9c7409', // gold
     bgDark: '#7d5a0a',
     frontImage: null,
     backImage: null,
@@ -32,7 +32,7 @@ export const CARD_TIERS = [
     label: 'Millionaire Team 4000',
     match: ['millionaire'],
     accent: '#cfd6dd',
-    printAccent: '#6e7681', // silver
+    printAccent: '#5f6a75', // silver / platinum (deep, prints on white)
     bgDark: '#4d545c',
     frontImage: null,
     backImage: null,
@@ -42,7 +42,7 @@ export const CARD_TIERS = [
     label: 'GET 2500',
     match: ['2500'],
     accent: '#ffb054',
-    printAccent: '#c26a02', // amber orange
+    printAccent: '#c15c00', // amber orange
     bgDark: '#8f4e02',
     frontImage: null,
     backImage: null,
@@ -52,7 +52,7 @@ export const CARD_TIERS = [
     label: 'GET 1000',
     match: ['get'],
     accent: '#ff5c8a',
-    printAccent: '#b01c48', // ruby pink
+    printAccent: '#b3164a', // ruby pink
     bgDark: '#7d1233',
     frontImage: null,
     backImage: null,
@@ -62,7 +62,7 @@ export const CARD_TIERS = [
     label: 'World Team',
     match: ['world'],
     accent: '#b18cff',
-    printAccent: '#5b2a86', // purple
+    printAccent: '#5a2d82', // purple
     bgDark: '#3f1c5e',
     frontImage: null,
     backImage: null,
@@ -72,7 +72,7 @@ export const CARD_TIERS = [
     label: 'Supervisor',
     match: ['supervisor'],
     accent: '#e58398',
-    printAccent: '#7a1c2e', // maroon
+    printAccent: '#7d1a2b', // maroon
     bgDark: '#541220',
     frontImage: null,
     backImage: null,
@@ -82,7 +82,7 @@ export const CARD_TIERS = [
     label: 'Associate',
     match: [],
     accent: '#6ec6ff',
-    printAccent: '#1272ba', // sky blue (deep, print-safe)
+    printAccent: '#0e6fb8', // sky blue (deep, print-safe)
     bgDark: '#0c548a',
     frontImage: null,
     backImage: null,
