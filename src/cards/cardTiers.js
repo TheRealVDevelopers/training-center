@@ -39,6 +39,15 @@ export const CARD_TIERS = [
     backImage: null,
   },
   {
+    key: 'world',
+    label: 'World Team',
+    match: ['world'],
+    accent: '#7ea8ff',
+    printAccent: '#23408f',
+    frontImage: null,
+    backImage: null,
+  },
+  {
     key: 'supervisor',
     label: 'Supervisor',
     match: ['supervisor'],

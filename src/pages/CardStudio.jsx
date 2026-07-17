@@ -163,22 +163,14 @@ function CardFace({ member, tier, side, print }) {
 
       {side === 'front' ? (
         <>
-          <div className="pc-head">
-            <div className="pc-brand">
-              <span className="pc-leaf" style={{ background: ac }}>🌿</span>
-              <span className="pc-club">SATURDAY TRAINING<small>HERBALIFE NUTRITION CLUB</small></span>
-            </div>
-            <span className="pc-chip" style={{ color: ac, borderColor: `${ac}55`, background: `${ac}14` }}>
-              {tier.label.toUpperCase()}
-            </span>
-          </div>
+          {/* The level IS the header — big, highlighted, full width */}
+          <div className="pc-band" style={{ background: ac }}>{tier.label.toUpperCase()}</div>
           <div className="pc-id">
             {member.photoURL
               ? <img className="pc-photo" src={member.photoURL} alt="" crossOrigin="anonymous" />
               : <span className="pc-photo fb" style={{ background: ac }}>{(member.name || '?')[0]}</span>}
             <div>
               <div className="pc-name">{member.name}</div>
-              {member.position && <div className="pc-pos" style={{ color: ac }}>{member.position}</div>}
               {member.clubName && <div className="pc-clubname">{member.clubName}</div>}
             </div>
           </div>

@@ -738,25 +738,30 @@ a:hover { text-decoration: underline; }
 .cs-face { box-shadow: var(--shadow-lg); }
 .pc-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
-/* Light print-optimized card face — dye-sub prints white bases far cleaner
-   than dark fills. Tier color arrives via --tier. */
-.pc-face.pc-light { background: #fff; color: #16241c; border: 1px solid #e2e7e3; }
-.pc-face.pc-light::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2.6mm; background: var(--tier); }
-.pc-light .pc-club { color: #16241c; }
-.pc-light .pc-club small { color: #7c8b81; }
-.pc-light .pc-name { background: none; -webkit-background-clip: unset; background-clip: unset; -webkit-text-fill-color: unset; color: #10231a; }
-.pc-light .pc-clubname { color: #7c8b81; }
-.pc-light .pc-photo { border-color: #e9efe9; }
+/* Light print-optimized card face. ALL text pure #000: the printer then uses
+   its sharp K resin panel instead of compositing Y+M+C, which ghosts/doubles
+   small text. Tier color arrives via --tier. */
+.pc-face.pc-light { background: #fff; color: #000; border: 1px solid #e2e7e3; }
+.pc-band {
+  margin: -4.6mm -5mm 2.6mm; height: 9mm; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: var(--font-display); font-weight: 800;
+  font-size: 4.4mm; letter-spacing: 0.1em; white-space: nowrap;
+}
+.pc-light .pc-name { background: none; -webkit-background-clip: unset; background-clip: unset; -webkit-text-fill-color: unset; color: #000; font-size: 5.6mm; font-weight: 800; }
+.pc-light .pc-clubname { color: #000; font-size: 3mm; font-weight: 700; margin-top: 1mm; }
+.pc-light .pc-photo { border-color: #e9efe9; width: 15.5mm; height: 15.5mm; }
 .pc-light .pc-photo.fb { color: #fff; }
-.pc-light .pc-facts { border-top-color: #e6ebe7; }
-.pc-light .pc-facts b { color: #16241c; }
-.pc-light .pc-facts span { color: #7c8b81; }
-.pc-light .pc-foot > span:first-child { color: #7c8b81; }
-.pc-light .pc-bhead { color: #7c8b81; }
-.pc-light .pc-bname { color: #10231a; }
-.pc-light .pc-bsub { color: #7c8b81; }
-.pc-light .pc-fine { color: #7c8b81; }
-.pc-light .pc-fine b { color: #16241c; }
+.pc-light .pc-facts { border-top-color: #d9dfda; }
+.pc-light .pc-facts b { color: #000; font-size: 3.8mm; }
+.pc-light .pc-facts span { color: #000; font-size: 2mm; font-weight: 800; }
+.pc-light .pc-foot > span:first-child { color: #000; font-size: 2.4mm; }
+.pc-light .pc-tap { font-size: 2.7mm; font-weight: 800; }
+.pc-light .pc-bhead { color: #000; }
+.pc-light .pc-bname { color: #000; font-size: 4.2mm; }
+.pc-light .pc-bsub { color: #000; font-size: 2.7mm; }
+.pc-light .pc-fine { color: #000; font-size: 2.2mm; }
+.pc-light .pc-fine b { color: #000; }
 .pc-light .pc-qr { border: 1px solid #e2e7e3; padding: 1.2mm; }
 
 /* ---- Printer test card ---- */
