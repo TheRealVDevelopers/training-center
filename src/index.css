@@ -823,10 +823,10 @@ a:hover { text-decoration: underline; }
   font-family: var(--font-display); display: flex; flex-direction: column;
   print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
-.bc-top { display: flex; justify-content: space-between; align-items: center; gap: 3mm; }
-.bc-club { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.14em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bc-level { font-size: 2.6mm; font-weight: 800; letter-spacing: 0.12em; white-space: nowrap; border: 0.35mm solid rgba(255,255,255,0.85); border-radius: 999px; padding: 1mm 2.6mm; }
-.bc-chiprow { display: flex; align-items: center; gap: 2.6mm; margin-top: 4.2mm; }
+.bc-club { font-weight: 800; letter-spacing: 0.12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bc-levelrow { margin-top: 1.6mm; }
+.bc-level { display: inline-block; font-size: 2.6mm; font-weight: 800; letter-spacing: 0.1em; white-space: nowrap; border: 0.35mm solid rgba(255,255,255,0.85); border-radius: 999px; padding: 1mm 3mm; }
+.bc-chiprow { display: flex; align-items: center; gap: 2.6mm; margin-top: 3.4mm; }
 .bc-chip { width: 10.5mm; height: 8.4mm; }
 .bc-cwaves { width: 6.5mm; height: 6.5mm; }
 .bc-bottom { margin-top: auto; }

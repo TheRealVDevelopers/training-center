@@ -163,10 +163,10 @@ function CardFace({ member, tier, side, print }) {
 
       {side === 'front' ? (
         <>
-          <div className="bc-top">
-            <span className="bc-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
-            <span className="bc-level">{tier.label.toUpperCase()}</span>
+          <div className="bc-club" style={{ fontSize: (member.clubName || '').length > 28 ? '1.9mm' : '2.2mm' }}>
+            🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}
           </div>
+          <div className="bc-levelrow"><span className="bc-level">{tier.label.toUpperCase()}</span></div>
           <div className="bc-chiprow">
             <Chip />
             <svg className="bc-cwaves" viewBox="0 0 24 24" aria-hidden="true">
