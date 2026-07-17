@@ -106,11 +106,12 @@ export default function CardStudio() {
                   </div>
                   {msg && <div className="banner">{msg}</div>}
                   <div className="row gap" style={{ marginTop: 12 }}>
-                    <button className="btn primary" onClick={() => printCard('front')}>🖨 Print FRONT</button>
-                    <button className="btn" onClick={() => printCard('back')}>🖨 Print BACK</button>
+                    <button className="btn primary" onClick={() => printCard('both')}>🖨 Print CARD (front + back)</button>
+                    <button className="btn small" onClick={() => printCard('front')}>Front only</button>
+                    <button className="btn small" onClick={() => printCard('back')}>Back only</button>
                   </div>
                   <p className="muted small" style={{ margin: '10px 0 0' }}>
-                    Print the front, flip the card in the printer, print the back.
+                    One click — the Asmi flips the card and prints both sides automatically.
                   </p>
                 </div>
 
@@ -124,11 +125,17 @@ export default function CardStudio() {
         </div>
       </div>
 
-      {/* Print zone — the only thing the printer sees */}
+      {/* Print zone — the only thing the printer sees. 'both' renders two
+          pages in one job; the Asmi flips the card and prints both sides. */}
       {sel && (
         <div className="cs-printzone">
           <style>{`@media print { @page { size: 86mm 54mm; margin: 0; } }`}</style>
-          <CardFace member={sel} tier={tier} side={printSide} print />
+          {(printSide === 'both' || printSide === 'front') && (
+            <div className="cs-sheet"><CardFace member={sel} tier={tier} side="front" print /></div>
+          )}
+          {(printSide === 'both' || printSide === 'back') && (
+            <div className="cs-sheet"><CardFace member={sel} tier={tier} side="back" print /></div>
+          )}
         </div>
       )}
     </div>

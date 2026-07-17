@@ -744,4 +744,5 @@ a:hover { text-decoration: underline; }
   .cardstudio .cardstudio-ui { display: none !important; }
   .cs-printzone { display: block !important; }
   .cs-printzone .pc-face { border: none; border-radius: 0; width: 86mm; height: 54mm; }
+  .cs-sheet { break-after: page; }
 }
