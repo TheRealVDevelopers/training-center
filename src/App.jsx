@@ -18,6 +18,7 @@ import Station from './pages/Station'
 import GateFeed from './pages/GateFeed'
 import CardPrint from './pages/CardPrint'
 import CardStudio from './pages/CardStudio'
+import TestCard from './pages/TestCard'
 
 export default function App() {
   const { loading } = useAuth()
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/feed" element={<CodeGate kind="scanner" label="Gate Feed"><GateFeed /></CodeGate>} />
       <Route path="/admin/card/:id" element={<CodeGate kind="admin" label="Print Card"><CardPrint /></CodeGate>} />
       <Route path="/admin/print" element={<CodeGate kind="admin" label="Card Studio"><CardStudio /></CodeGate>} />
+      <Route path="/admin/testcard" element={<CodeGate kind="admin" label="Printer Test"><TestCard /></CodeGate>} />
       <Route path="/admin" element={<CodeGate kind="admin" label="Admin"><AdminDashboard /></CodeGate>} />
       <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
       <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />

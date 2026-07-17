@@ -759,6 +759,26 @@ a:hover { text-decoration: underline; }
 .pc-light .pc-fine b { color: #16241c; }
 .pc-light .pc-qr { border: 1px solid #e2e7e3; padding: 1.2mm; }
 
+/* ---- Printer test card ---- */
+.tc-face { background: #fff; color: #111; display: flex; flex-direction: column; gap: 1.8mm; padding: 3.6mm 4mm; }
+.tc-frame { position: absolute; inset: 0.6mm; border: 0.4mm solid #000; pointer-events: none; }
+.tc-frame.white { border-color: #fff; }
+.tc-title { font-family: var(--font-display); font-weight: 800; font-size: 3mm; letter-spacing: 0.1em; color: #111; }
+.tc-bars { display: grid; grid-template-columns: repeat(7, 1fr); height: 7mm; }
+.tc-bars span { display: block; }
+.tc-grad { height: 4.5mm; }
+.tc-grad.rainbow { background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.tc-grad.gray { background: linear-gradient(90deg, #000, #fff); }
+.tc-patches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1mm; height: 6mm; }
+.tc-patches span { display: grid; place-items: center; font-size: 2mm; font-weight: 700; }
+.tc-text { display: grid; gap: 0.7mm; margin-top: auto; }
+.tc-text span { white-space: nowrap; overflow: hidden; color: #000; }
+.tc-text .t6 { font-size: 2.1mm; }
+.tc-text .t5 { font-size: 1.76mm; }
+.tc-text .t4 { font-size: 1.41mm; }
+.tc-black { background: #000; align-items: center; justify-content: center; }
+.tc-black-label { color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 3.2mm; letter-spacing: 0.08em; text-align: center; }
+
 /* Screen: hide the print zone. Print: show ONLY the print zone. */
 .cs-printzone { display: none; }
 @media print {

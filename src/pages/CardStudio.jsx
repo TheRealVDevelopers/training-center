@@ -64,7 +64,10 @@ export default function CardStudio() {
             <div className="brand"><span className="leaf">🌿</span>Card Studio</div>
             <div className="muted small">Select member → design picks itself → print</div>
           </div>
-          <Link className="btn ghost small" to="/admin/credits">‹ Reception</Link>
+          <div className="row gap">
+            <Link className="btn ghost small" to="/admin/testcard">🎨 Test prints</Link>
+            <Link className="btn ghost small" to="/admin/credits">‹ Reception</Link>
+          </div>
         </header>
 
         <div className="cs-cols">
