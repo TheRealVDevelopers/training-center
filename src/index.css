@@ -770,7 +770,16 @@ a:hover { text-decoration: underline; }
   font-family: 'Playfair Display', Georgia, serif;
   print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
-.nv-waves { position: absolute; right: 0; top: 0; height: 100%; width: 26mm; pointer-events: none; }
+.nv2-leaves { position: absolute; right: 0; top: 0; height: 100%; width: 34mm; pointer-events: none; }
+.nv2-badge { display: flex; align-items: center; gap: 2mm; position: relative; z-index: 1; }
+.nv2-logo { width: 7.2mm; height: 7.2mm; flex: none; border: 0.4mm solid #e8c56a; border-radius: 50%; display: grid; place-items: center; font-size: 3.2mm; }
+.nv2-clubsm { font-size: 2.1mm; font-weight: 500; letter-spacing: 0.18em; color: #f0e2b6; }
+.nv2-title { font-size: 7mm; line-height: 1.04; font-weight: 600; letter-spacing: 0.02em; margin-top: 3.4mm; max-width: 48mm; position: relative; z-index: 1; }
+.nv2-bottom { margin-top: auto; position: relative; z-index: 1; }
+.nv2-lbl { font-size: 2mm; letter-spacing: 0.22em; color: #f0e2b6; opacity: 0.85; font-weight: 500; }
+.nv2-name { font-size: 4.6mm; font-weight: 600; margin-top: 1.1mm; letter-spacing: 0.02em; }
+.nv2-meta { font-size: 2.6mm; margin-top: 1.2mm; letter-spacing: 0.05em; white-space: pre; }
+.nv-mail { white-space: nowrap; }
 .nv-name { font-size: 6mm; font-weight: 600; letter-spacing: 0.04em; line-height: 1.05; }
 .nv-level { font-size: 3.3mm; font-weight: 500; letter-spacing: 0.09em; margin: 1.4mm 0 0 1.6mm; }
 .nv-rule { height: 0.45mm; background: #f0e2b6; margin: 2.4mm 0 2.6mm; position: relative; z-index: 1; }

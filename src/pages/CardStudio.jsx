@@ -161,25 +161,26 @@ function CardFace({ member, tier, side, print }) {
   return (
     <div className={`pc-face cs-face pc-navy ${print ? 'print' : ''}`}>
       {img && <img className="pc-bg" src={img} alt="" />}
-      <GoldWaves />
+      <Leaves color={tier.accent} />
 
       {side === 'front' ? (
         <>
-          <div className="nv-name">{(member.name || '').toUpperCase()}</div>
-          <div className="nv-level">{levelText}</div>
-          <div className="nv-rule" />
-          <div className="nv-row">
-            <span>JOINED: {joined || '—'}</span>
-            <span>CITY: {(member.city || '—').toUpperCase()}</span>
+          <div className="nv2-badge">
+            <span className="nv2-logo">🌿</span>
+            <span className="nv2-clubsm">{(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
           </div>
-          <div className="nv-clubwrap">
-            <div className="nv-club">{(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</div>
-            <div className="nv-id">ID: {serial}</div>
+          <div className="nv2-title" style={{ color: tier.accent }}>{tier.label.toUpperCase()}</div>
+          <div className="nv2-bottom">
+            <div className="nv2-lbl">MEMBER NAME</div>
+            <div className="nv2-name">{member.name}</div>
+            <div className="nv2-meta">
+              ID: {serial}{joined ? `   JOINED: ${joined}` : ''}{member.city ? `   ${member.city.toUpperCase()}` : ''}
+            </div>
           </div>
         </>
       ) : (
         <>
-          <div className="nv-tap">TAP TO ENTER <span className="nv-sig">)))</span></div>
+          <div className="nv-tap" style={{ color: tier.accent }}>TAP TO ENTER <span className="nv-sig">)))</span></div>
           <div className="nv-bgrid">
             <div>
               <div className="nv-scanlbl">SCAN FOR PROFILE ACCESS</div>
@@ -190,7 +191,11 @@ function CardFace({ member, tier, side, print }) {
             <div className="nv-contact">
               <div className="nv-cname">{member.name}</div>
               {member.mobile && <div>{member.mobile}</div>}
-              {member.email && <div className="nv-mail">{member.email}</div>}
+              {member.email && (
+                <div className="nv-mail" style={{ fontSize: member.email.length > 32 ? '1.9mm' : member.email.length > 26 ? '2.2mm' : '2.6mm' }}>
+                  {member.email}
+                </div>
+              )}
               <div className="nv-note">No money is stored on this card — balance stays safe in your account.</div>
             </div>
           </div>
@@ -200,19 +205,23 @@ function CardFace({ member, tier, side, print }) {
   )
 }
 
-// The flowing gold line motif on the card's right edge.
-function GoldWaves() {
+// Botanical branch on the card's right — leaves pick up the tier color.
+function Leaves({ color }) {
+  const leaves = [
+    // [x, y, rotation, scale, colorIndex, opacity]
+    [50, 22, -50, 1.1, 0, 0.95], [44, 30, -20, 1.0, 1, 0.9], [53, 34, 30, 1.2, 2, 0.9],
+    [42, 42, -55, 0.9, 3, 0.85], [52, 47, 15, 1.1, 1, 0.95], [44, 55, -30, 1.0, 0, 0.9],
+    [54, 60, 40, 1.2, 2, 0.85], [43, 67, -15, 0.9, 3, 0.9], [52, 73, 25, 1.1, 0, 0.9],
+    [45, 80, -45, 1.0, 1, 0.85], [55, 86, 35, 1.2, 2, 0.9], [48, 12, -35, 0.9, 3, 0.85],
+    [57, 16, 20, 1.0, 1, 0.9], [58, 42, 60, 0.8, 3, 0.8],
+  ]
+  const palette = [color, '#7c9082', '#55685c', '#c9a961']
   return (
-    <svg className="nv-waves" viewBox="0 0 60 100" preserveAspectRatio="none" aria-hidden="true">
-      {Array.from({ length: 14 }).map((_, i) => (
-        <path
-          key={i}
-          d={`M ${64 - i * 2.7} -5 C ${34 - i * 1.4} 30, ${34 - i * 1.4} 70, ${64 - i * 2.7} 105`}
-          fill="none"
-          stroke="#c9a961"
-          strokeWidth="0.35"
-          opacity="0.55"
-        />
+    <svg className="nv2-leaves" viewBox="0 0 60 100" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+      <path d="M 62 96 C 46 74, 42 48, 50 8" stroke="#c9a961" strokeWidth="0.55" fill="none" opacity="0.9" />
+      <path d="M 64 70 C 50 60, 44 38, 47 10" stroke="#7c9082" strokeWidth="0.45" fill="none" opacity="0.8" />
+      {leaves.map(([x, y, rot, s, ci, op], i) => (
+        <ellipse key={i} cx={x} cy={y} rx={4.4 * s} ry={1.8 * s} fill={palette[ci]} opacity={op} transform={`rotate(${rot} ${x} ${y})`} />
       ))}
     </svg>
   )
