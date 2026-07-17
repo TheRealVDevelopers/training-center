@@ -764,21 +764,21 @@ a:hover { text-decoration: underline; }
 .pc-light .pc-fine b { color: #000; }
 .pc-light .pc-qr { border: 1px solid #e2e7e3; padding: 1.2mm; }
 
-/* ---- Navy + gold card (approved design) ---- */
+/* ---- Ivory botanical card: dark sharp text, level-colored title/leaves ---- */
 .pc-face.pc-navy {
-  background: #1c2137; color: #f0e2b6; border: none; padding: 4.6mm 5.2mm;
+  background: #fbf8f0; color: #111; border: 1px solid #e7e2d4; padding: 4.6mm 5.2mm;
   font-family: 'Playfair Display', Georgia, serif;
   print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .nv2-leaves { position: absolute; right: 0; top: 0; height: 100%; width: 34mm; pointer-events: none; }
 .nv2-badge { display: flex; align-items: center; gap: 2mm; position: relative; z-index: 1; }
-.nv2-logo { width: 7.2mm; height: 7.2mm; flex: none; border: 0.4mm solid #e8c56a; border-radius: 50%; display: grid; place-items: center; font-size: 3.2mm; }
-.nv2-clubsm { font-size: 2.1mm; font-weight: 500; letter-spacing: 0.18em; color: #f0e2b6; }
-.nv2-title { font-size: 7mm; line-height: 1.04; font-weight: 600; letter-spacing: 0.02em; margin-top: 3.4mm; max-width: 48mm; position: relative; z-index: 1; }
+.nv2-logo { width: 7.2mm; height: 7.2mm; flex: none; border: 0.4mm solid #a8790f; border-radius: 50%; display: grid; place-items: center; font-size: 3.2mm; }
+.nv2-clubsm { font-size: 2.1mm; font-weight: 700; letter-spacing: 0.18em; color: #111; }
+.nv2-title { font-size: 7mm; line-height: 1.04; font-weight: 700; letter-spacing: 0.02em; margin-top: 3.4mm; max-width: 48mm; position: relative; z-index: 1; }
 .nv2-bottom { margin-top: auto; position: relative; z-index: 1; }
-.nv2-lbl { font-size: 2mm; letter-spacing: 0.22em; color: #f0e2b6; opacity: 0.85; font-weight: 500; }
-.nv2-name { font-size: 4.6mm; font-weight: 600; margin-top: 1.1mm; letter-spacing: 0.02em; }
-.nv2-meta { font-size: 2.6mm; margin-top: 1.2mm; letter-spacing: 0.05em; white-space: pre; }
+.nv2-lbl { font-size: 2mm; letter-spacing: 0.22em; color: #111; opacity: 0.75; font-weight: 700; }
+.nv2-name { font-size: 4.6mm; font-weight: 700; margin-top: 1.1mm; letter-spacing: 0.02em; color: #000; }
+.nv2-meta { font-size: 2.6mm; margin-top: 1.2mm; letter-spacing: 0.05em; white-space: pre; color: #000; font-weight: 500; }
 .nv-mail { white-space: nowrap; }
 .nv-name { font-size: 6mm; font-weight: 600; letter-spacing: 0.04em; line-height: 1.05; }
 .nv-level { font-size: 3.3mm; font-weight: 500; letter-spacing: 0.09em; margin: 1.4mm 0 0 1.6mm; }
@@ -787,16 +787,15 @@ a:hover { text-decoration: underline; }
 .nv-clubwrap { margin-top: auto; text-align: center; padding-bottom: 0.6mm; }
 .nv-club { font-size: 4.5mm; font-weight: 600; letter-spacing: 0.05em; }
 .nv-id { font-size: 2.8mm; margin-top: 1mm; letter-spacing: 0.08em; }
-.nv-tap { text-align: center; font-size: 5.4mm; font-weight: 600; letter-spacing: 0.06em; margin-top: 0.6mm; }
+.nv-tap { text-align: center; font-size: 5.4mm; font-weight: 700; letter-spacing: 0.06em; margin-top: 0.6mm; }
 .nv-sig { font-size: 4mm; letter-spacing: -0.06em; }
 .nv-bgrid { display: flex; gap: 4mm; margin-top: 2.6mm; flex: 1; align-items: center; }
-.nv-scanlbl { font-size: 2.5mm; font-weight: 500; letter-spacing: 0.06em; margin-bottom: 1.4mm; }
-.nv-qr { background: #f0e2b6; padding: 1.3mm; border-radius: 1.6mm; width: -moz-fit-content; width: fit-content; }
+.nv-scanlbl { font-size: 2.5mm; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 1.4mm; color: #111; }
+.nv-qr { background: #fff; border: 0.3mm solid #d9d2c0; padding: 1.3mm; border-radius: 1.6mm; width: -moz-fit-content; width: fit-content; }
 .nv-qr canvas { width: 19.5mm !important; height: 19.5mm !important; display: block; }
-.nv-contact { flex: 1; display: flex; flex-direction: column; gap: 1.5mm; align-items: flex-end; text-align: right; font-size: 2.9mm; font-weight: 500; min-width: 0; }
-.nv-cname { font-size: 3.3mm; font-weight: 600; letter-spacing: 0.03em; }
-.nv-mail { word-break: break-all; }
-.nv-note { font-size: 1.9mm; opacity: 0.85; margin-top: 1.6mm; max-width: 40mm; line-height: 1.45; }
+.nv-contact { flex: 1; display: flex; flex-direction: column; gap: 1.5mm; align-items: flex-end; text-align: right; font-size: 2.9mm; font-weight: 700; min-width: 0; color: #000; }
+.nv-cname { font-size: 3.3mm; font-weight: 700; letter-spacing: 0.03em; }
+.nv-note { font-size: 1.9mm; color: #333; margin-top: 1.6mm; max-width: 40mm; line-height: 1.45; }
 
 /* ---- Printer test card ---- */
 .tc-face { background: #fff; color: #111; display: flex; flex-direction: column; gap: 1.8mm; padding: 3.6mm 4mm; }
@@ -817,6 +816,33 @@ a:hover { text-decoration: underline; }
 .tc-text .t4 { font-size: 1.41mm; }
 .tc-black { background: #000; align-items: center; justify-content: center; }
 .tc-black-label { color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 3.2mm; letter-spacing: 0.08em; text-align: center; }
+
+/* ---- Bank-card design: level color = card background, bold white text ---- */
+.bc-face {
+  color: #fff; border: none; padding: 4.4mm 5mm;
+  font-family: var(--font-display); display: flex; flex-direction: column;
+  print-color-adjust: exact; -webkit-print-color-adjust: exact;
+}
+.bc-top { display: flex; justify-content: space-between; align-items: center; gap: 3mm; }
+.bc-club { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.14em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bc-level { font-size: 2.6mm; font-weight: 800; letter-spacing: 0.12em; white-space: nowrap; border: 0.35mm solid rgba(255,255,255,0.85); border-radius: 999px; padding: 1mm 2.6mm; }
+.bc-chiprow { display: flex; align-items: center; gap: 2.6mm; margin-top: 4.2mm; }
+.bc-chip { width: 10.5mm; height: 8.4mm; }
+.bc-cwaves { width: 6.5mm; height: 6.5mm; }
+.bc-bottom { margin-top: auto; }
+.bc-lbl { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.24em; opacity: 0.85; }
+.bc-name { font-size: 5mm; font-weight: 800; letter-spacing: 0.06em; margin-top: 1mm; line-height: 1.08; }
+.bc-meta { font-size: 2.5mm; font-weight: 700; letter-spacing: 0.06em; margin-top: 1.4mm; white-space: pre; opacity: 0.95; }
+.bc-tap { text-align: center; font-size: 5.2mm; font-weight: 800; letter-spacing: 0.08em; margin-top: 0.6mm; }
+.bc-sig { letter-spacing: -0.06em; }
+.bc-bgrid { display: flex; gap: 4mm; margin-top: 2.8mm; flex: 1; align-items: center; }
+.bc-scanlbl { font-size: 2.4mm; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 1.4mm; }
+.bc-qr { background: #fff; padding: 1.4mm; border-radius: 1.8mm; width: -moz-fit-content; width: fit-content; }
+.bc-qr canvas { width: 19.5mm !important; height: 19.5mm !important; display: block; }
+.bc-contact { flex: 1; display: flex; flex-direction: column; gap: 1.5mm; align-items: flex-end; text-align: right; font-size: 2.9mm; font-weight: 700; min-width: 0; }
+.bc-cname { font-size: 3.3mm; font-weight: 800; letter-spacing: 0.03em; }
+.bc-mail { white-space: nowrap; }
+.bc-note { font-size: 1.9mm; font-weight: 600; opacity: 0.9; margin-top: 1.6mm; max-width: 42mm; line-height: 1.45; }
 
 /* Screen: hide the print zone. Print: show ONLY the print zone. */
 .cs-printzone { display: none; }

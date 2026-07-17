@@ -1,40 +1,59 @@
-// Card tier registry — one entry per Herbalife level. When the final designs
-// arrive, drop the artwork into src/assets/cards/ and set frontImage/backImage
-// (import the files and reference them here). Until then each tier renders a
-// styled fallback using its colors, so printing works end-to-end today.
-//
-// Field placement over artwork is controlled by `layout` (all units in mm on
-// the 86 x 54 card): tweak per tier once the real designs define where the
-// name / photo / QR spaces are.
+// Card tier registry — the 8 Herbalife levels with their card colors.
+// printAccent: the card's BACKGROUND color (deep, saturated — prints rich);
+// bgDark: same hue darkened, for the card's gradient. accent: lighter
+// variants for the dark app UI.
+// Order matters for detection: more specific levels (7500 / 2500) match first.
+// Keys 'millionaire' and 'get' are kept for members whose level was saved
+// before the split — they map to the 4000 / 1000 tiers.
 
 export const CARD_TIERS = [
-  // printAccent: dye-sub printers band on big dark fills, so cards print on a
-  // white base with a strong solid accent per tier (chosen dark enough to read
-  // on white). accent stays for on-screen dark-theme uses.
   {
     key: 'president',
     label: "President's Team",
     match: ['president'],
+    accent: '#d9d9d9',
+    printAccent: '#141414', // black
+    bgDark: '#000000',
+    frontImage: null,
+    backImage: null,
+  },
+  {
+    key: 'mill7500',
+    label: 'Millionaire Team 7500',
+    match: ['7500'],
     accent: '#f0c75e',
-    printAccent: '#a8790f',
+    printAccent: '#a8790f', // gold
+    bgDark: '#7d5a0a',
     frontImage: null,
     backImage: null,
   },
   {
     key: 'millionaire',
-    label: 'Millionaire Team',
+    label: 'Millionaire Team 4000',
     match: ['millionaire'],
-    accent: '#d9dde2',
-    printAccent: '#5b6772',
+    accent: '#cfd6dd',
+    printAccent: '#6e7681', // silver
+    bgDark: '#4d545c',
+    frontImage: null,
+    backImage: null,
+  },
+  {
+    key: 'get2500',
+    label: 'GET 2500',
+    match: ['2500'],
+    accent: '#ffb054',
+    printAccent: '#c26a02', // amber orange
+    bgDark: '#8f4e02',
     frontImage: null,
     backImage: null,
   },
   {
     key: 'get',
-    label: 'GET Team',
+    label: 'GET 1000',
     match: ['get'],
-    accent: '#8dff4f',
-    printAccent: '#0a8a4a',
+    accent: '#ff5c8a',
+    printAccent: '#b01c48', // ruby pink
+    bgDark: '#7d1233',
     frontImage: null,
     backImage: null,
   },
@@ -42,8 +61,9 @@ export const CARD_TIERS = [
     key: 'world',
     label: 'World Team',
     match: ['world'],
-    accent: '#7ea8ff',
-    printAccent: '#23408f',
+    accent: '#b18cff',
+    printAccent: '#5b2a86', // purple
+    bgDark: '#3f1c5e',
     frontImage: null,
     backImage: null,
   },
@@ -51,17 +71,19 @@ export const CARD_TIERS = [
     key: 'supervisor',
     label: 'Supervisor',
     match: ['supervisor'],
-    accent: '#6ec6ff',
-    printAccent: '#1769aa',
+    accent: '#e58398',
+    printAccent: '#7a1c2e', // maroon
+    bgDark: '#541220',
     frontImage: null,
     backImage: null,
   },
   {
     key: 'associate',
-    label: 'Associate / Member',
+    label: 'Associate',
     match: [],
-    accent: '#00e07a',
-    printAccent: '#067a3d',
+    accent: '#6ec6ff',
+    printAccent: '#1272ba', // sky blue (deep, print-safe)
+    bgDark: '#0c548a',
     frontImage: null,
     backImage: null,
   },
@@ -74,7 +96,11 @@ export function tierByKey(key) {
 // Level comes from the explicit member.level (set in the Card Studio) or is
 // guessed from the free-text position they typed at signup.
 export function detectTier(member) {
-  const s = `${member?.level || ''} ${member?.position || ''}`.toLowerCase()
+  if (member?.level) {
+    const t = CARD_TIERS.find((x) => x.key === member.level)
+    if (t) return t.key
+  }
+  const s = `${member?.position || ''}`.toLowerCase()
   for (const t of CARD_TIERS) {
     if (t.match.some((k) => new RegExp(`\\b${k}`, 'i').test(s))) return t.key
   }

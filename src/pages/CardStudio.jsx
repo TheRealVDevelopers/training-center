@@ -145,58 +145,63 @@ export default function CardStudio() {
   )
 }
 
-// One card face, exact CR80 mm geometry. Design: deep navy + antique gold,
-// serif type, gold flowing lines on the right (the approved mockup). If a tier
-// ever gets final artwork (frontImage/backImage) it replaces the background.
-const NAVY = '#1c2137'
-const GOLD = '#f0e2b6'
-
+// One card face, exact CR80 mm geometry. Bank-card design: the LEVEL sets the
+// card's background color (deep same-hue gradient); all text is bold white
+// knockout (no ink layered on the letters -> no double edges); gold chip +
+// contactless waves show there's NFC inside. If a tier gets final artwork
+// (frontImage/backImage) it replaces the background.
 function CardFace({ member, tier, side, print }) {
   const serial = `TC-${(member.id || '').slice(-4).toUpperCase()}`
   const yrs = parseInt(member.years, 10)
   const joined = Number.isFinite(yrs) && yrs > 0 && yrs < 80 ? new Date().getFullYear() - yrs : null
   const img = side === 'front' ? tier.frontImage : tier.backImage
-  const levelText = (member.position || tier.label).toUpperCase()
+  const grad = `linear-gradient(135deg, ${tier.printAccent} 0%, ${tier.bgDark || tier.printAccent} 100%)`
 
   return (
-    <div className={`pc-face cs-face pc-navy ${print ? 'print' : ''}`}>
+    <div className={`pc-face cs-face bc-face ${print ? 'print' : ''}`} style={{ background: grad }}>
       {img && <img className="pc-bg" src={img} alt="" />}
-      <Leaves color={tier.accent} />
 
       {side === 'front' ? (
         <>
-          <div className="nv2-badge">
-            <span className="nv2-logo">🌿</span>
-            <span className="nv2-clubsm">{(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
+          <div className="bc-top">
+            <span className="bc-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
+            <span className="bc-level">{tier.label.toUpperCase()}</span>
           </div>
-          <div className="nv2-title" style={{ color: tier.accent }}>{tier.label.toUpperCase()}</div>
-          <div className="nv2-bottom">
-            <div className="nv2-lbl">MEMBER NAME</div>
-            <div className="nv2-name">{member.name}</div>
-            <div className="nv2-meta">
+          <div className="bc-chiprow">
+            <Chip />
+            <svg className="bc-cwaves" viewBox="0 0 24 24" aria-hidden="true">
+              {[5, 10, 15].map((r) => (
+                <path key={r} d={`M ${6 + r * 0.2} ${12 - r} A ${r} ${r} 0 0 1 ${6 + r * 0.2} ${12 + r}`} fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" opacity="0.9" />
+              ))}
+            </svg>
+          </div>
+          <div className="bc-bottom">
+            <div className="bc-lbl">MEMBER</div>
+            <div className="bc-name">{(member.name || '').toUpperCase()}</div>
+            <div className="bc-meta">
               ID: {serial}{joined ? `   JOINED: ${joined}` : ''}{member.city ? `   ${member.city.toUpperCase()}` : ''}
             </div>
           </div>
         </>
       ) : (
         <>
-          <div className="nv-tap" style={{ color: tier.accent }}>TAP TO ENTER <span className="nv-sig">)))</span></div>
-          <div className="nv-bgrid">
+          <div className="bc-tap">TAP TO ENTER <span className="bc-sig">)))</span></div>
+          <div className="bc-bgrid">
             <div>
-              <div className="nv-scanlbl">SCAN FOR PROFILE ACCESS</div>
-              <div className="nv-qr">
-                <QRCodeCanvas value={member.memberToken || serial} size={280} level="M" includeMargin={false} fgColor={NAVY} bgColor={GOLD} />
+              <div className="bc-scanlbl">SCAN FOR PROFILE ACCESS</div>
+              <div className="bc-qr">
+                <QRCodeCanvas value={member.memberToken || serial} size={280} level="M" includeMargin={false} fgColor="#111111" bgColor="#ffffff" />
               </div>
             </div>
-            <div className="nv-contact">
-              <div className="nv-cname">{member.name}</div>
+            <div className="bc-contact">
+              <div className="bc-cname">{member.name}</div>
               {member.mobile && <div>{member.mobile}</div>}
               {member.email && (
-                <div className="nv-mail" style={{ fontSize: member.email.length > 32 ? '1.9mm' : member.email.length > 26 ? '2.2mm' : '2.6mm' }}>
+                <div className="bc-mail" style={{ fontSize: member.email.length > 32 ? '1.9mm' : member.email.length > 26 ? '2.2mm' : '2.6mm' }}>
                   {member.email}
                 </div>
               )}
-              <div className="nv-note">No money is stored on this card — balance stays safe in your account.</div>
+              <div className="bc-note">No money is stored on this card — balance stays safe in your account.</div>
             </div>
           </div>
         </>
@@ -205,24 +210,20 @@ function CardFace({ member, tier, side, print }) {
   )
 }
 
-// Botanical branch on the card's right — leaves pick up the tier color.
-function Leaves({ color }) {
-  const leaves = [
-    // [x, y, rotation, scale, colorIndex, opacity]
-    [50, 22, -50, 1.1, 0, 0.95], [44, 30, -20, 1.0, 1, 0.9], [53, 34, 30, 1.2, 2, 0.9],
-    [42, 42, -55, 0.9, 3, 0.85], [52, 47, 15, 1.1, 1, 0.95], [44, 55, -30, 1.0, 0, 0.9],
-    [54, 60, 40, 1.2, 2, 0.85], [43, 67, -15, 0.9, 3, 0.9], [52, 73, 25, 1.1, 0, 0.9],
-    [45, 80, -45, 1.0, 1, 0.85], [55, 86, 35, 1.2, 2, 0.9], [48, 12, -35, 0.9, 3, 0.85],
-    [57, 16, 20, 1.0, 1, 0.9], [58, 42, 60, 0.8, 3, 0.8],
-  ]
-  const palette = [color, '#7c9082', '#55685c', '#c9a961']
+// Gold EMV-style chip: shows members there's a real chip inside the card.
+function Chip() {
   return (
-    <svg className="nv2-leaves" viewBox="0 0 60 100" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
-      <path d="M 62 96 C 46 74, 42 48, 50 8" stroke="#c9a961" strokeWidth="0.55" fill="none" opacity="0.9" />
-      <path d="M 64 70 C 50 60, 44 38, 47 10" stroke="#7c9082" strokeWidth="0.45" fill="none" opacity="0.8" />
-      {leaves.map(([x, y, rot, s, ci, op], i) => (
-        <ellipse key={i} cx={x} cy={y} rx={4.4 * s} ry={1.8 * s} fill={palette[ci]} opacity={op} transform={`rotate(${rot} ${x} ${y})`} />
-      ))}
+    <svg className="bc-chip" viewBox="0 0 30 24" aria-hidden="true">
+      <defs>
+        <linearGradient id="chipgold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f6dc93" />
+          <stop offset="0.5" stopColor="#d9b25c" />
+          <stop offset="1" stopColor="#b8934a" />
+        </linearGradient>
+      </defs>
+      <rect x="0.8" y="0.8" width="28.4" height="22.4" rx="3.6" fill="url(#chipgold)" stroke="#8a6d33" strokeWidth="0.6" />
+      <path d="M 0.8 8 H 10 M 0.8 16 H 10 M 20 8 H 29.2 M 20 16 H 29.2 M 15 0.8 V 6 M 15 18 V 23.2 M 10 8 C 13 9.5, 13 14.5, 10 16 M 20 8 C 17 9.5, 17 14.5, 20 16"
+        fill="none" stroke="#8a6d33" strokeWidth="0.7" />
     </svg>
   )
 }
