@@ -25,6 +25,7 @@ export default function AdminCredits() {
   const [findMsg, setFindMsg] = useState('')
   const [finding, setFinding] = useState(false)
   const [writePin, setWritePin] = useState('')
+  const [manualUid, setManualUid] = useState('')
 
   useEffect(() => subscribeMembers(setMembers), [])
   useEffect(() => subscribeAccessCodes(setCodes), [])
@@ -104,6 +105,23 @@ export default function AdminCredits() {
       setNfcMsg(`✓ Card issued to ${sel.name}. They can tap to enter.`)
     } catch (e) {
       setNfcMsg(e.message || 'Card write failed — hold the card still and retry.')
+    } finally {
+      setNfcBusy(false)
+    }
+  }
+
+  async function assignManual() {
+    if (!sel) return
+    if (!writeUnlocked) { setNfcMsg('🔒 Enter the Card Write PIN first.'); return }
+    const code = manualUid.trim()
+    if (!code) { setNfcMsg('Scan or type the card ID first.'); return }
+    setNfcBusy(true)
+    try {
+      await assignCard(sel.id, code)
+      setNfcMsg(`✓ Card ${code} assigned to ${sel.name}.`)
+      setManualUid('')
+    } catch (e) {
+      setNfcMsg(e.message)
     } finally {
       setNfcBusy(false)
     }
@@ -226,14 +244,8 @@ export default function AdminCredits() {
           </div>
           {sel.cardUid && <div className="banner">Current card: <b>{sel.cardUid}</b></div>}
 
-          {/* Printing the card needs no PIN — the QR is the identity */}
-          <Link className="btn primary block" to={`/admin/print?m=${sel.id}`} target="_blank">
-            🖨 Print card (Card Studio)
-          </Link>
-
-          {/* Assigning an NFC UID is write-restricted */}
           {!writeUnlocked ? (
-            <div style={{ marginTop: 12 }}>
+            <div>
               <label>🔒 Card Write PIN (from Super Admin)</label>
               <input
                 type="password" inputMode="numeric" maxLength={6}
@@ -246,9 +258,18 @@ export default function AdminCredits() {
             </div>
           ) : (
             <>
-              <div className="banner" style={{ marginTop: 12 }}>✓ Card writing unlocked</div>
+              <div className="banner">✓ Card writing unlocked</div>
+
+              {/* Bridge-free: scan the card's code with the QR reader, or type it */}
+              <label>Scan or type the card ID</label>
+              <div className="row gap">
+                <input value={manualUid} onChange={(e) => setManualUid(e.target.value)} placeholder="Scan card / type ID" style={{ flex: 1 }} />
+                <button className="btn primary" onClick={assignManual} disabled={nfcBusy || !manualUid.trim()}>Assign</button>
+              </div>
+
+              <div className="muted small" style={{ margin: '12px 0 4px' }}>— or, with the USB bridge running —</div>
               <button className="btn block" onClick={assignViaReader} disabled={nfcBusy}>
-                💳 {nfcBusy ? 'Tap the card now…' : 'Assign NFC card (USB reader)'}
+                💳 {nfcBusy ? 'Tap the card now…' : 'Assign by tapping (USB reader)'}
               </button>
               {nfcSupported() && (
                 <button className="btn block" onClick={issueCard} disabled={nfcBusy}>

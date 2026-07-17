@@ -18,10 +18,17 @@ export function useLocalReader(onTap) {
 
   useEffect(() => {
     let stopped = false
+    let timer = null
+    let fails = 0
+    // Fast poll (120ms) while the bridge answers; if it's not running, back off
+    // to every 4s so the console isn't flooded with connection-refused errors.
     async function poll() {
+      if (stopped) return
+      let delay = 120
       try {
         const r = await fetch(BRIDGE, { cache: 'no-store' })
         const d = await r.json()
+        fails = 0
         if (lastSeq.current === null) {
           lastSeq.current = d.seq // ignore whatever was already there on load
         } else if (d.seq > lastSeq.current) {
@@ -29,12 +36,13 @@ export function useLocalReader(onTap) {
           if (d.uid) cb.current(normalizeCode(d.uid), d.reader || '')
         }
       } catch {
-        /* bridge not running / not reachable — ignore */
+        fails += 1
+        delay = fails > 3 ? 4000 : 120 // bridge not running — slow down
       }
+      if (!stopped) timer = setTimeout(poll, delay)
     }
-    const id = setInterval(() => { if (!stopped) poll() }, 120)
     poll()
-    return () => { stopped = true; clearInterval(id) }
+    return () => { stopped = true; if (timer) clearTimeout(timer) }
   }, [])
 }
 
