@@ -873,7 +873,10 @@ a:hover { text-decoration: underline; }
   .page.cardstudio { padding: 0 !important; margin: 0 !important; max-width: none !important; }
   .cardstudio .cardstudio-ui { display: none !important; }
   .cs-printzone { display: block !important; }
-  .cs-printzone .pc-face { border: none; border-radius: 0; width: 85.6mm; height: 53.8mm; }
-  .cs-sheet { break-after: page; margin: 0 !important; padding: 0 !important; }
+  /* Each sheet is exactly the card page; the face over-bleeds 1mm on every
+     side and the sheet clips it — so the colored design reaches the physical
+     card edge even if the feed is a hair off (no white top/bottom border). */
+  .cs-sheet { position: relative; width: 86mm; height: 54mm; overflow: hidden; break-after: page; margin: 0 !important; padding: 0 !important; }
   .cs-sheet:last-child { break-after: auto; }
+  .cs-printzone .pc-face { position: absolute; top: -1mm; left: -1mm; width: 88mm; height: 56mm; border: none !important; border-radius: 0 !important; }
 }
