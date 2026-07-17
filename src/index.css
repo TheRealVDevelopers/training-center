@@ -826,7 +826,9 @@ a:hover { text-decoration: underline; }
   overflow: hidden; print-color-adjust: exact; -webkit-print-color-adjust: exact;
 }
 .pr-guilloche { position: absolute; right: -6mm; top: -8mm; width: 52mm; height: 52mm; opacity: 0.16; pointer-events: none; z-index: 0; }
-.pr-frame { position: absolute; inset: 1.4mm; border: 0.3mm solid rgba(255, 255, 255, 0.42); border-radius: 2.4mm; pointer-events: none; z-index: 3; }
+.pr-frame { position: absolute; inset: 1.4mm; border: 0.3mm solid rgba(255, 255, 255, 0.45); border-radius: 2.4mm; pointer-events: none; z-index: 3; }
+.pr-frame2 { position: absolute; inset: 2.2mm; border: 0.2mm solid rgba(255, 255, 255, 0.28); border-radius: 2mm; pointer-events: none; z-index: 3; }
+.pr-seal { position: absolute; right: 4mm; top: 4.4mm; width: 15mm; height: 15mm; z-index: 2; filter: drop-shadow(0 0.4mm 0.6mm rgba(0,0,0,0.25)); }
 
 /* Color zone (top) with chip + club, over the level-color background */
 .pr-colorzone { position: relative; z-index: 1; padding: 4.2mm 5mm 0; }

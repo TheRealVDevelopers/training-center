@@ -165,15 +165,16 @@ function CardFace({ member, tier, side, print }) {
       {img && <img className="pc-bg" src={img} alt="" />}
       <Guilloche color="#ffffff" />
       <span className="pr-frame" />
+      <span className="pr-frame2" />
 
       {side === 'front' ? (
         <>
+          {tier.points && <PointsSeal points={tier.points} />}
           <div className="pr-colorzone">
             <div className="pr-toprow">
               <span className="pr-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
-              <Waves color="#ffffff" />
             </div>
-            <div className="pr-chiprow"><Chip /><span className="pr-nfc">NFC · TAP TO ENTER</span></div>
+            <div className="pr-chiprow"><Chip /><Waves color="#ffffff" /><span className="pr-nfc">NFC</span></div>
           </div>
           <div className="pr-panel">
             <div className="pr-plevel" style={{ color: ac }}>{tier.label.toUpperCase()}</div>
@@ -238,6 +239,32 @@ function Waves({ color }) {
       {[5, 9.5, 14].map((r) => (
         <path key={r} d={`M ${6} ${12 - r} A ${r} ${r} 0 0 1 ${6} ${12 + r}`} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
       ))}
+    </svg>
+  )
+}
+
+// Gold award seal showing the tier's points (GET 1000/2500, Millionaire
+// 4000/7500) — a scalloped medallion, like a wax/foil seal.
+function PointsSeal({ points }) {
+  const scallops = 28
+  const petals = Array.from({ length: scallops }).map((_, i) => {
+    const a = (i / scallops) * Math.PI * 2
+    return `${(50 + 46 * Math.cos(a)).toFixed(1)},${(50 + 46 * Math.sin(a)).toFixed(1)}`
+  }).join(' ')
+  return (
+    <svg className="pr-seal" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <radialGradient id="sealgold" cx="0.4" cy="0.35" r="0.75">
+          <stop offset="0" stopColor="#fbe9ad" />
+          <stop offset="0.55" stopColor="#e6c460" />
+          <stop offset="1" stopColor="#b8933f" />
+        </radialGradient>
+      </defs>
+      <polygon points={petals} fill="url(#sealgold)" stroke="#8a6a2a" strokeWidth="1" opacity="0.5" transform="rotate(6.4 50 50)" />
+      <circle cx="50" cy="50" r="41" fill="url(#sealgold)" stroke="#fff" strokeWidth="1.6" />
+      <circle cx="50" cy="50" r="35" fill="none" stroke="#8a6a2a" strokeWidth="0.8" opacity="0.7" />
+      <text x="50" y="46" textAnchor="middle" fontFamily="'Sora',sans-serif" fontWeight="800" fontSize="26" fill="#5a3d0c">{points}</text>
+      <text x="50" y="63" textAnchor="middle" fontFamily="'Sora',sans-serif" fontWeight="800" fontSize="11" letterSpacing="2" fill="#5a3d0c">POINTS</text>
     </svg>
   )
 }

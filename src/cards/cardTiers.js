@@ -24,6 +24,7 @@ export const CARD_TIERS = [
     accent: '#f0c75e',
     printAccent: '#9c7409', // gold
     bgDark: '#7d5a0a',
+    points: 7500,
     frontImage: null,
     backImage: null,
   },
@@ -34,6 +35,7 @@ export const CARD_TIERS = [
     accent: '#cfd6dd',
     printAccent: '#5f6a75', // silver / platinum (deep, prints on white)
     bgDark: '#4d545c',
+    points: 4000,
     frontImage: null,
     backImage: null,
   },
@@ -44,6 +46,7 @@ export const CARD_TIERS = [
     accent: '#ffb054',
     printAccent: '#c15c00', // amber orange
     bgDark: '#8f4e02',
+    points: 2500,
     frontImage: null,
     backImage: null,
   },
@@ -54,6 +57,7 @@ export const CARD_TIERS = [
     accent: '#ff5c8a',
     printAccent: '#b3164a', // ruby pink
     bgDark: '#7d1233',
+    points: 1000,
     frontImage: null,
     backImage: null,
   },
