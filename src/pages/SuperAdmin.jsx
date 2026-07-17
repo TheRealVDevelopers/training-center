@@ -115,8 +115,13 @@ function Panel({ logout }) {
       <div className="stations-grid">
         <Link className="station-tile" to="/admin">
           <span className="station-ico">🖥️</span>
-          <span className="station-t">Command Center</span>
-          <span className="station-s">Live board · session control</span>
+          <span className="station-t">Live Board</span>
+          <span className="station-s">Main screen · who's entering + session control</span>
+        </Link>
+        <Link className="station-tile" to="/admin/command">
+          <span className="station-ico">📊</span>
+          <span className="station-t">Analytics</span>
+          <span className="station-s">Detailed Command Center (owner)</span>
         </Link>
         <Link className="station-tile" to="/admin/credits">
           <span className="station-ico">💰</span>

@@ -650,6 +650,9 @@ a:hover { text-decoration: underline; }
 .gfeed-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px; background: rgba(15, 23, 19, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
 .gfeed-title { font-family: var(--font-display); font-weight: 800; font-size: 19px; }
 .gfeed-sub { color: var(--muted); font-weight: 700; font-size: 13px; margin-top: 2px; }
+.gfeed-stats { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gfeed-ctrl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gfeed-startbanner { margin: 10px 14px 0; background: rgba(255, 176, 46, 0.12); border: 1px solid rgba(255, 176, 46, 0.3); color: #ffcb70; padding: 12px 15px; border-radius: var(--r-sm); font-weight: 700; font-size: 14px; }
 .gfeed-count { text-align: center; background: rgba(53, 224, 138, 0.1); border: 1px solid rgba(53, 224, 138, 0.3); border-radius: 16px; padding: 8px 16px; }
 .gfeed-count b { display: block; font-family: var(--font-display); font-size: 24px; color: var(--brand-ink); line-height: 1; }
 .gfeed-count span { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }

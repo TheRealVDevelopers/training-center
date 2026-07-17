@@ -37,11 +37,14 @@ export default function App() {
       <Route path="/card" element={<CodeGate kind="scanner" label="Card Scanner"><CardScan /></CodeGate>} />
       <Route path="/door" element={<CodeGate kind="scanner" label="Door"><Door /></CodeGate>} />
       <Route path="/station" element={<CodeGate kind="admin" label="Station Hub"><Station /></CodeGate>} />
-      <Route path="/feed" element={<CodeGate kind="scanner" label="Gate Feed"><GateFeed /></CodeGate>} />
+      <Route path="/feed" element={<CodeGate kind="scanner" label="Live Board"><GateFeed /></CodeGate>} />
       <Route path="/admin/card/:id" element={<CodeGate kind="admin" label="Print Card"><CardPrint /></CodeGate>} />
       <Route path="/admin/print" element={<CodeGate kind="admin" label="Card Studio"><CardStudio /></CodeGate>} />
       <Route path="/admin/testcard" element={<CodeGate kind="admin" label="Printer Test"><TestCard /></CodeGate>} />
-      <Route path="/admin" element={<CodeGate kind="admin" label="Admin"><AdminDashboard /></CodeGate>} />
+      {/* /admin is now the simple Live Board (with session controls);
+          the detailed Command Center moved to /admin/command */}
+      <Route path="/admin" element={<CodeGate kind="admin" label="Live Board"><GateFeed control /></CodeGate>} />
+      <Route path="/admin/command" element={<CodeGate kind="admin" label="Command Center"><AdminDashboard /></CodeGate>} />
       <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
       <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />
 
