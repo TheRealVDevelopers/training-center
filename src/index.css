@@ -784,6 +784,9 @@ a:hover { text-decoration: underline; }
 @media print {
   .cardstudio .cardstudio-ui { display: none !important; }
   .cs-printzone { display: block !important; }
-  .cs-printzone .pc-face { border: none; border-radius: 0; width: 86mm; height: 54mm; }
+  /* A hair under CR80 (85.6 x 54) so exact-fit rounding never spills a face
+     onto a second sheet; the driver's edge-to-edge handling covers the sliver. */
+  .cs-printzone .pc-face { border: none; border-radius: 0; width: 85.6mm; height: 53.8mm; }
   .cs-sheet { break-after: page; }
+  .cs-sheet:last-child { break-after: auto; }
 }
