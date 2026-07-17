@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   subscribeActiveSession,
   subscribeSessionBookings,
   subscribeScanEvents,
+  subscribeMembers,
+  checkInMember,
+  logScanEvent,
   startSession,
   endSession,
 } from '../lib/db'
 import { useWakeLock } from '../lib/wakeLock'
+import { useCardWedge } from '../lib/wedge'
+import { useLocalReader } from '../lib/localReader'
+import { feedback, primeAudio } from '../lib/feedback'
 
 // The MAIN live board. Streams every tap: green ✓ = entered, red ✗ = low
 // credit → send to desk. Shows name, mobile and credits left.
@@ -18,12 +24,47 @@ export default function GateFeed({ control = false }) {
   const [events, setEvents] = useState([])
   const [session, setSession] = useState(null)
   const [bookings, setBookings] = useState([])
+  const [members, setMembers] = useState([])
   const [busy, setBusy] = useState(false)
+  const sessionRef = useRef(null)
+  const membersRef = useRef([])
+  const recent = useRef(new Map())
 
   useWakeLock(true)
   useEffect(() => subscribeScanEvents(setEvents, 50), [])
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => (session ? subscribeSessionBookings(session.id, setBookings) : undefined), [session])
+  useEffect(() => (control ? subscribeMembers(setMembers) : undefined), [control])
+  useEffect(() => { sessionRef.current = session }, [session])
+  useEffect(() => { membersRef.current = members }, [members])
+  useEffect(() => {
+    if (!control) return undefined
+    const prime = () => primeAudio()
+    window.addEventListener('pointerdown', prime, { once: true })
+    return () => window.removeEventListener('pointerdown', prime)
+  }, [control])
+
+  // On the /admin board, the tap/scan is read HERE and checked in, then shown.
+  // (On the /feed phone view, control=false → it only displays.)
+  async function onScan(code) {
+    if (!code) return
+    const now = Date.now()
+    if (recent.current.get(code) && now - recent.current.get(code) < 3500) return
+    recent.current.set(code, now)
+    const sess = sessionRef.current
+    const fee = sess?.feePerPerson ?? 0
+    const cr = (m) => (fee ? Math.floor((m?.balance || 0) / fee) : 0)
+    const base = (m) => ({ name: m?.name || '', photoURL: m?.photoURL || '', mobile: m?.mobile || '' })
+    const res = await checkInMember(code, 'desk', sess)
+    feedback(res.ok)
+    if (res.ok) logScanEvent({ gate: 'desk', ok: true, kind: res.reason === 'reentry' ? 'reentry' : 'welcome', ...base(res.member), credits: res.sessionsLeft ?? cr(res.member) })
+    else if (res.reason === 'already') logScanEvent({ gate: 'desk', ok: true, kind: 'already', ...base(res.member), credits: cr(res.member) })
+    else if (res.reason === 'insufficient') logScanEvent({ gate: 'desk', ok: false, kind: 'low', ...base(res.member), credits: 0 })
+    else if (res.reason === 'nosession') logScanEvent({ gate: 'desk', ok: false, kind: 'nosession', name: '', photoURL: '', mobile: '', credits: 0 })
+    else logScanEvent({ gate: 'desk', ok: false, kind: 'notreg', name: '', photoURL: '', mobile: '', credits: 0 })
+  }
+  useCardWedge(onScan, control) // QR gun / keyboard-mode reader
+  useLocalReader(control ? onScan : () => {}) // ACR122U via the bridge
 
   const checkedIn = useMemo(() => bookings.filter((b) => b.status === 'checked_in'), [bookings])
   const insideNow = checkedIn.filter((b) => !b.exitedAt).reduce((n, b) => n + (b.peopleCount || 0), 0)
