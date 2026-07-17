@@ -5,7 +5,9 @@ import {
   subscribeMembers,
   checkInMember,
   checkOutMember,
+  logScanEvent,
 } from '../lib/db'
+import { QRCodeCanvas } from 'qrcode.react'
 import { useCardWedge } from '../lib/wedge'
 import { useLocalReader } from '../lib/localReader'
 import { useWakeLock } from '../lib/wakeLock'
@@ -89,10 +91,12 @@ export default function Door() {
       else { show({ kind: 'welcome', member: local, pending: true }, true); shown = true }
     }
     const res = await checkInMember(code, gate ? `door-${gate}` : 'door', sess)
-    if (res.reason === 'unknown') show({ kind: 'notreg' }, shown ? undefined : false)
-    else if (res.ok) show({ kind: 'welcome', member: res.member, sessionsLeft: res.sessionsLeft, reentry: res.reason === 'reentry' }, shown ? undefined : true)
-    else if (res.reason === 'already') show({ kind: 'already', member: res.member }, null)
-    else if (res.reason === 'insufficient') show({ kind: 'low', member: res.member }, shown ? undefined : false)
+    const g = gate ? `gate${gate}` : 'door'
+    const cr = (m) => (fee ? Math.floor((m?.balance || 0) / fee) : 0)
+    if (res.reason === 'unknown') { show({ kind: 'notreg' }, shown ? undefined : false); logScanEvent({ gate: g, ok: false, kind: 'notreg', name: '', photoURL: '', mobile: '', credits: 0 }) }
+    else if (res.ok) { show({ kind: 'welcome', member: res.member, sessionsLeft: res.sessionsLeft, reentry: res.reason === 'reentry' }, shown ? undefined : true); logScanEvent({ gate: g, ok: true, kind: res.reason === 'reentry' ? 'reentry' : 'welcome', name: res.member?.name || '', photoURL: res.member?.photoURL || '', mobile: res.member?.mobile || '', credits: res.sessionsLeft ?? cr(res.member) }) }
+    else if (res.reason === 'already') { show({ kind: 'already', member: res.member }, null); logScanEvent({ gate: g, ok: true, kind: 'already', name: res.member?.name || '', photoURL: res.member?.photoURL || '', mobile: res.member?.mobile || '', credits: cr(res.member) }) }
+    else if (res.reason === 'insufficient') { show({ kind: 'low', member: res.member }, shown ? undefined : false); logScanEvent({ gate: g, ok: false, kind: 'low', name: res.member?.name || '', photoURL: res.member?.photoURL || '', mobile: res.member?.mobile || '', credits: 0 }) }
     else if (res.reason === 'nosession') show({ kind: 'nosession' }, false)
   }
 
@@ -151,6 +155,23 @@ export default function Door() {
             </div>
           ))}
         </aside>
+      </div>
+
+      <FeedShare gate={gate} />
+    </div>
+  )
+}
+
+// Link + QR so anyone standing at the door can open the live "who's entering"
+// feed on their own phone (out-of-credit taps show a red ✗ there).
+function FeedShare({ gate }) {
+  const url = `${window.location.origin}/feed${gate ? `?gate=gate${gate}` : ''}`
+  return (
+    <div className="door-share">
+      <div className="door-share-qr"><QRCodeCanvas value={url} size={200} level="M" includeMargin bgColor="#ffffff" fgColor="#0a130e" style={{ width: 76, height: 76 }} /></div>
+      <div className="door-share-txt">
+        <div className="door-share-h">📲 Watch entries on your phone</div>
+        <div className="door-share-sub">Scan this, or open <b>{url.replace(/^https?:\/\//, '')}</b> — see everyone tapping in, with a red ✗ for low credit.</div>
       </div>
     </div>
   )

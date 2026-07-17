@@ -76,17 +76,20 @@ export default function Station() {
     // Confirm in the cloud, then log the definitive event for the tablets.
     try {
       const res = await checkInMember(uid, gate, sess)
+      const feeS = sess?.feePerPerson ?? 0
+      const cr = (m) => (feeS ? Math.floor((m?.balance || 0) / feeS) : 0)
+      const base = (m) => ({ name: m?.name || '', photoURL: m?.photoURL || '', mobile: m?.mobile || '' })
       let evt
       if (res.ok) {
-        evt = { ok: true, kind: res.reason === 'reentry' ? 'reentry' : 'welcome', name: res.member?.name || '', photoURL: res.member?.photoURL || '' }
+        evt = { ok: true, kind: res.reason === 'reentry' ? 'reentry' : 'welcome', ...base(res.member), credits: res.sessionsLeft ?? cr(res.member) }
       } else if (res.reason === 'already') {
-        evt = { ok: true, kind: 'already', name: res.member?.name || '', photoURL: res.member?.photoURL || '' }
+        evt = { ok: true, kind: 'already', ...base(res.member), credits: cr(res.member) }
       } else if (res.reason === 'insufficient') {
-        evt = { ok: false, kind: 'low', name: res.member?.name || '', photoURL: res.member?.photoURL || '' }
+        evt = { ok: false, kind: 'low', ...base(res.member), credits: 0 }
       } else if (res.reason === 'nosession') {
-        evt = { ok: false, kind: 'nosession', name: '', photoURL: '' }
+        evt = { ok: false, kind: 'nosession', name: '', photoURL: '', mobile: '', credits: 0 }
       } else {
-        evt = { ok: false, kind: 'notreg', name: '', photoURL: '' }
+        evt = { ok: false, kind: 'notreg', name: '', photoURL: '', mobile: '', credits: 0 }
       }
       logScanEvent({ gate, ...evt })
       if (!local) {

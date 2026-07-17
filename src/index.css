@@ -611,6 +611,12 @@ a:hover { text-decoration: underline; }
 .door-item-tag.in { background: rgba(53, 224, 138, 0.14); color: var(--brand-ink); }
 .door-item-tag.out { background: rgba(255, 176, 46, 0.14); color: #ffc46a; }
 
+.door-share { display: flex; align-items: center; gap: 14px; padding: 12px 20px; background: rgba(15, 23, 19, 0.9); border-top: 1px solid var(--line); }
+.door-share-qr { background: #fff; padding: 5px; border-radius: 10px; flex: none; line-height: 0; }
+.door-share-h { font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--ink); }
+.door-share-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.door-share-sub b { color: var(--brand-ink); }
+
 @media (max-width: 760px) {
   .door-body { grid-template-columns: 1fr; grid-template-rows: 1.4fr 1fr; }
   .door-list { border-left: none; border-top: 1px solid var(--line); }
@@ -666,6 +672,8 @@ a:hover { text-decoration: underline; }
 .gfeed-row.err .gfeed-line { color: #ff958c; }
 .gfeed-meta { text-align: right; flex: none; }
 .gfeed-gate { display: block; font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--brand-ink); }
+.gfeed-cr { display: block; font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--brand-ink); }
+.gfeed-cr.low { color: var(--danger); }
 .gfeed-time { font-size: 11.5px; font-weight: 700; color: var(--muted); }
 
 /* ---- Card print (CR80 85.6 x 54 mm) ---- */

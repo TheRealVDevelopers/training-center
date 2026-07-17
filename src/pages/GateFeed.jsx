@@ -61,11 +61,14 @@ export default function GateFeed() {
               : <span className="gfeed-face fb">{(e.name || '?')[0]}</span>}
             <div className="gfeed-body">
               <div className="gfeed-name">{e.name || 'Unknown card'}</div>
-              <div className="gfeed-line">{lineFor[e.kind] || e.kind}</div>
+              <div className="gfeed-line">
+                {lineFor[e.kind] || e.kind}
+                {e.mobile ? ` · ${e.mobile}` : ''}
+              </div>
             </div>
             <div className="gfeed-meta">
-              <span className="gfeed-gate">{(e.gate || '').replace('gate', 'D')}</span>
-              <span className="gfeed-time">{fmtTime(e.at)}</span>
+              <span className={`gfeed-cr ${e.ok ? '' : 'low'}`}>{e.ok ? `${e.credits ?? 0} cr` : '0 cr'}</span>
+              <span className="gfeed-time">{(e.gate || '').replace('gate', 'D')} · {fmtTime(e.at)}</span>
             </div>
           </div>
         ))}

@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CURRENCY } from '../config'
-import { subscribeMembers, addCredit, ensureMemberToken, assignCard } from '../lib/db'
+import { CURRENCY, SESSION } from '../config'
+import { useAuth } from '../auth/AuthContext'
+import { subscribeMembers, addCredit, ensureMemberToken, assignCard, subscribeAccessCodes } from '../lib/db'
 import { nfcSupported, writeNfc } from '../lib/nfc'
 import { captureOneCard } from '../lib/wedge'
 import { captureNextCard } from '../lib/localReader'
 
+const FEE = SESSION.feePerPerson // ₹ per credit (one entry)
+
 export default function AdminCredits() {
+  const { isSuper } = useAuth()
   const [members, setMembers] = useState([])
+  const [codes, setCodes] = useState({})
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [amount, setAmount] = useState('')
@@ -19,8 +24,14 @@ export default function AdminCredits() {
   const [nfcBusy, setNfcBusy] = useState(false)
   const [findMsg, setFindMsg] = useState('')
   const [finding, setFinding] = useState(false)
+  const [writePin, setWritePin] = useState('')
 
   useEffect(() => subscribeMembers(setMembers), [])
+  useEffect(() => subscribeAccessCodes(setCodes), [])
+
+  // Only the owner, or someone with the super-admin-generated Card Write PIN,
+  // may assign/write a card. Adding credit needs no PIN.
+  const writeUnlocked = isSuper || (!!codes.writeCode && writePin === codes.writeCode)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -52,7 +63,7 @@ export default function AdminCredits() {
       const m = members.find((x) => x.cardUid === code || x.memberToken === code)
       if (!m) { setFindMsg(`Card ${code} isn’t assigned to anyone yet.`); return }
       setSelected(m.id)
-      setFindMsg(`✓ ${m.name} · balance ${CURRENCY}${m.balance || 0}`)
+      setFindMsg(`✓ ${m.name} · ${FEE ? Math.floor((m.balance || 0) / FEE) : 0} credits`)
     }
     cancelBridge = captureNextCard(finish)
     cancelKb = captureOneCard(finish)
@@ -84,6 +95,7 @@ export default function AdminCredits() {
 
   async function issueCard() {
     if (!sel) return
+    if (!writeUnlocked) { setNfcMsg('🔒 Enter the Card Write PIN first.'); return }
     setNfcMsg('Tap a blank card on the back of the phone…')
     setNfcBusy(true)
     try {
@@ -99,6 +111,7 @@ export default function AdminCredits() {
 
   function assignViaReader() {
     if (!sel) return
+    if (!writeUnlocked) { setNfcMsg('🔒 Enter the Card Write PIN first.'); return }
     setNfcMsg('Tap the card on the reader now…')
     setNfcBusy(true)
     document.activeElement?.blur()
@@ -160,7 +173,7 @@ export default function AdminCredits() {
                 <span className="mname">{m.name}</span>
                 <span className="muted small"> · {m.mobile}</span>
               </span>
-              <span className="strong">{CURRENCY}{m.balance || 0}</span>
+              <span className="strong">{FEE ? Math.floor((m.balance || 0) / FEE) : 0} cr</span>
             </button>
           ))}
           {filtered.length === 0 && <div className="muted small">No members match.</div>}
@@ -169,18 +182,25 @@ export default function AdminCredits() {
 
       {sel && (
         <form className="card" onSubmit={submit}>
-          <h3>Add credit · {sel.name}</h3>
-          <div className="muted small">Current balance: {CURRENCY}{sel.balance || 0}</div>
+          <h3>Recharge · {sel.name}</h3>
+          <div className="muted small">
+            {sel.mobile ? `📞 ${sel.mobile} · ` : ''}
+            <b>{FEE ? Math.floor((sel.balance || 0) / FEE) : 0} credits left</b> ({CURRENCY}{sel.balance || 0})
+          </div>
 
-          <label>Amount ({CURRENCY})</label>
+          <button type="button" className="btn primary block" style={{ marginTop: 12 }} onClick={() => setAmount(String(5 * FEE))}>
+            🎟️ Recharge 5 credits ({CURRENCY}{5 * FEE})
+          </button>
+
+          <label>Or another amount ({CURRENCY})</label>
           <div className="amt-presets">
-            {[300, 600, 900, 1500, 3000].map((v) => (
-              <button type="button" key={v} className={`amt-chip ${Number(amount) === v ? 'on' : ''}`} onClick={() => setAmount(String(v))}>
-                {CURRENCY}{v}
+            {[1, 5, 10].map((c) => (
+              <button type="button" key={c} className={`amt-chip ${Number(amount) === c * FEE ? 'on' : ''}`} onClick={() => setAmount(String(c * FEE))}>
+                {c} credit{c > 1 ? 's' : ''}
               </button>
             ))}
           </div>
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="numeric" placeholder="Custom amount" />
+          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="numeric" placeholder="Custom ₹ amount" />
 
           <label>Payment method</label>
           <select value={method} onChange={(e) => setMethod(e.target.value)}>
@@ -202,19 +222,40 @@ export default function AdminCredits() {
         <div className="card">
           <h3>Assign card · {sel.name}</h3>
           <div className="muted small" style={{ marginBottom: 10 }}>
-            Give this member a card to tap at the door. The card only stores their ID — never the balance — so recharges never touch the card.
+            Links a card to this member. The card only stores their ID — never the balance — so recharges never touch the card.
           </div>
           {sel.cardUid && <div className="banner">Current card: <b>{sel.cardUid}</b></div>}
-          <button className="btn primary block" onClick={assignViaReader} disabled={nfcBusy}>
-            💳 {nfcBusy ? 'Tap the card now…' : 'Assign card (USB reader)'}
-          </button>
-          <Link className="btn block" to={`/admin/print?m=${sel.id}`} target="_blank">
+
+          {/* Printing the card needs no PIN — the QR is the identity */}
+          <Link className="btn primary block" to={`/admin/print?m=${sel.id}`} target="_blank">
             🖨 Print card (Card Studio)
           </Link>
-          {nfcSupported() && (
-            <button className="btn block" onClick={issueCard} disabled={nfcBusy}>
-              📶 Write card (phone NFC)
-            </button>
+
+          {/* Assigning an NFC UID is write-restricted */}
+          {!writeUnlocked ? (
+            <div style={{ marginTop: 12 }}>
+              <label>🔒 Card Write PIN (from Super Admin)</label>
+              <input
+                type="password" inputMode="numeric" maxLength={6}
+                value={writePin} onChange={(e) => setWritePin(e.target.value.replace(/\D/g, ''))}
+                placeholder={codes.writeCode ? 'Enter PIN to assign a card' : 'Owner must set a Write PIN first'}
+              />
+              {codes.writeCode && writePin.length === 6 && writePin !== codes.writeCode && (
+                <div className="muted small" style={{ color: 'var(--danger)', marginTop: 6 }}>Incorrect PIN.</div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="banner" style={{ marginTop: 12 }}>✓ Card writing unlocked</div>
+              <button className="btn block" onClick={assignViaReader} disabled={nfcBusy}>
+                💳 {nfcBusy ? 'Tap the card now…' : 'Assign NFC card (USB reader)'}
+              </button>
+              {nfcSupported() && (
+                <button className="btn block" onClick={issueCard} disabled={nfcBusy}>
+                  📶 Write to card (phone NFC)
+                </button>
+              )}
+            </>
           )}
           {nfcMsg && <div className="banner">{nfcMsg}</div>}
         </div>

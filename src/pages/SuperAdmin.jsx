@@ -183,6 +183,7 @@ function Panel({ logout }) {
       <div className="codes-grid">
         <CodeRow title="Admin code" subtitle="desk staff · dashboard & credits" value={codes.adminCode} onSet={(c) => setAccessCode('adminCode', c)} />
         <CodeRow title="Scanner code" subtitle="door staff · door / card / QR pages" value={codes.scannerCode} onSet={(c) => setAccessCode('scannerCode', c)} />
+        <CodeRow title="Card Write PIN" subtitle="required to assign / write a card" value={codes.writeCode} onSet={(c) => setAccessCode('writeCode', c)} />
       </div>
       <p className="muted small" style={{ margin: '2px 4px' }}>
         Share the code — staff type it once on their device, no account needed. Regenerate to instantly lock out every device using the old code.
