@@ -725,3 +725,23 @@ a:hover { text-decoration: underline; }
   .cardprint-page .pc-face { border: none; border-radius: 0; width: 86mm; height: 54mm; }
   .pcard-sheet { margin: 0; }
 }
+
+/* ---- Card Studio ---- */
+.cs-cols { display: grid; grid-template-columns: minmax(260px, 0.9fr) 1.4fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .cs-cols { grid-template-columns: 1fr; } }
+.cs-left { margin: 0; }
+.cs-right { display: grid; gap: 14px; }
+.cs-controls { margin: 0; }
+.cs-controls select { max-width: 260px; }
+.cs-previews { display: flex; flex-wrap: wrap; gap: 18px; }
+.cs-lbl { font-size: 10.5px; font-weight: 800; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 7px; }
+.cs-face { box-shadow: var(--shadow-lg); }
+.pc-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* Screen: hide the print zone. Print: show ONLY the print zone. */
+.cs-printzone { display: none; }
+@media print {
+  .cardstudio .cardstudio-ui { display: none !important; }
+  .cs-printzone { display: block !important; }
+  .cs-printzone .pc-face { border: none; border-radius: 0; width: 86mm; height: 54mm; }
+}

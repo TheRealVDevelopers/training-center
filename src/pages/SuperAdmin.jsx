@@ -128,6 +128,11 @@ function Panel({ logout }) {
           <span className="station-t">Daily report</span>
           <span className="station-s">Attendance · cash reconciliation</span>
         </Link>
+        <Link className="station-tile" to="/admin/print" target="_blank">
+          <span className="station-ico">🖨️</span>
+          <span className="station-t">Card Studio</span>
+          <span className="station-s">Print member cards by level</span>
+        </Link>
         <Link className="station-tile" to="/station" target="_blank">
           <span className="station-ico">🎛️</span>
           <span className="station-t">Station Hub</span>
