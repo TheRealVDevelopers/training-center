@@ -782,11 +782,13 @@ a:hover { text-decoration: underline; }
 /* Screen: hide the print zone. Print: show ONLY the print zone. */
 .cs-printzone { display: none; }
 @media print {
+  /* Kill ALL page chrome: the .page container's padding/margins were pushing
+     the card faces down and spilling each face onto a second sheet. */
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .page.cardstudio { padding: 0 !important; margin: 0 !important; max-width: none !important; }
   .cardstudio .cardstudio-ui { display: none !important; }
   .cs-printzone { display: block !important; }
-  /* A hair under CR80 (85.6 x 54) so exact-fit rounding never spills a face
-     onto a second sheet; the driver's edge-to-edge handling covers the sliver. */
   .cs-printzone .pc-face { border: none; border-radius: 0; width: 85.6mm; height: 53.8mm; }
-  .cs-sheet { break-after: page; }
+  .cs-sheet { break-after: page; margin: 0 !important; padding: 0 !important; }
   .cs-sheet:last-child { break-after: auto; }
 }
