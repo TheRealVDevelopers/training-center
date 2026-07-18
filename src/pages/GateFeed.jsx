@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CURRENCY, SESSION, RECHARGE_CREDITS } from '../config'
-import { useAuth } from '../auth/AuthContext'
 import {
   subscribeActiveSession,
   subscribeSessionBookings,
@@ -26,7 +25,6 @@ import { feedback, primeAudio } from '../lib/feedback'
 //  - control=true (at /admin): reads the readers, checks members in, recharges.
 //  - control=false (at /feed): view-only, opened on a phone via the door's QR.
 export default function GateFeed({ control = false }) {
-  const { isSuper } = useAuth()
   const [events, setEvents] = useState([])
   const [session, setSession] = useState(null)
   const [bookings, setBookings] = useState([])
@@ -162,19 +160,17 @@ export default function GateFeed({ control = false }) {
               {session
                 ? <button className="btn danger small" onClick={stop} disabled={busy}>End session</button>
                 : <button className="btn primary small" onClick={start} disabled={busy}>{busy ? '…' : 'Start session'}</button>}
-              {isSuper && (
-                <div className="gfeed-more">
-                  <button className="btn ghost small" onClick={() => setMoreOpen((v) => !v)}>⚙ More</button>
-                  {moreOpen && (
-                    <div className="gfeed-menu" onClick={() => setMoreOpen(false)}>
-                      <Link to="/admin/credits">💰 Credits &amp; cards</Link>
-                      <Link to="/admin/command">📊 Analytics</Link>
-                      <Link to="/admin/report">🧾 Daily report</Link>
-                      <Link to="/super">🛡️ Super Admin</Link>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="gfeed-more">
+                <button className="btn ghost small" onClick={() => setMoreOpen((v) => !v)}>⚙ More</button>
+                {moreOpen && (
+                  <div className="gfeed-menu" onClick={() => setMoreOpen(false)}>
+                    <Link to="/admin/credits">💰 Credits &amp; cards</Link>
+                    <Link to="/admin/command">📊 Analytics</Link>
+                    <Link to="/admin/report">🧾 Daily report</Link>
+                    <Link to="/super">🛡️ Super Admin</Link>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -187,7 +183,7 @@ export default function GateFeed({ control = false }) {
           <div className="gfm"><b>{insideNow}</b><span>Inside now</span></div>
           <div className="gfm"><b>{CURRENCY}{paymentsToday}</b><span>Payments today</span></div>
           <div className={`gfm ${lowBalance ? 'warn' : ''}`}><b>{lowBalance}</b><span>Low balance</span></div>
-          {isSuper && <Link className="gfm-link" to="/admin/command">Full analytics ›</Link>}
+          <Link className="gfm-link" to="/admin/command">Full analytics ›</Link>
         </div>
       )}
 
