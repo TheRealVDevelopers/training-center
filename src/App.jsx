@@ -29,17 +29,19 @@ export default function App() {
       {/* Owner-only control hub (email login) */}
       <Route path="/super" element={<SuperAdmin />} />
 
-      {/* Code-gated: volunteers/staff type a 6-digit code (owner bypasses) */}
+      {/* Door screen stays behind the scanner code (owner bypasses). */}
       <Route path="/door" element={<CodeGate kind="scanner" label="Door"><Door /></CodeGate>} />
       <Route path="/feed" element={<CodeGate kind="scanner" label="Live Board"><GateFeed /></CodeGate>} />
-      <Route path="/admin/card/:id" element={<CodeGate kind="admin" label="Print Card"><CardPrint /></CodeGate>} />
-      <Route path="/admin/print" element={<CodeGate kind="admin" label="Card Studio"><CardStudio /></CodeGate>} />
-      <Route path="/admin/testcard" element={<CodeGate kind="admin" label="Printer Test"><TestCard /></CodeGate>} />
+      {/* Admin pages open directly — no code. (Card writing is still protected
+          by its own Write PIN inside Credits.) */}
+      <Route path="/admin/card/:id" element={<CardPrint />} />
+      <Route path="/admin/print" element={<CardStudio />} />
+      <Route path="/admin/testcard" element={<TestCard />} />
       {/* /admin = the live reception board; /admin/command = analytics dashboard */}
-      <Route path="/admin" element={<CodeGate kind="admin" label="Reception"><GateFeed control /></CodeGate>} />
-      <Route path="/admin/command" element={<CodeGate kind="admin" label="Analytics"><AdminAnalytics /></CodeGate>} />
-      <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
-      <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />
+      <Route path="/admin" element={<GateFeed control />} />
+      <Route path="/admin/command" element={<AdminAnalytics />} />
+      <Route path="/admin/credits" element={<AdminCredits />} />
+      <Route path="/admin/report" element={<AdminReport />} />
 
       {/* Member routes (account login) */}
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
