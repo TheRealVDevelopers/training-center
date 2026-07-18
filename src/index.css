@@ -719,6 +719,15 @@ a:hover { text-decoration: underline; }
 .recharge-credits, .recharge-methods { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .recharge-amt { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--brand-ink); margin-bottom: 14px; }
 
+/* ---- Analytics ---- */
+.an-stats .mstat { border: 1px solid var(--line); }
+.an-pay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.an-pay-cell { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px; text-align: center; }
+.an-pay-cell.total { background: var(--grad-soft); border-color: transparent; }
+.an-pay-lbl { display: block; font-weight: 800; font-size: 12px; color: var(--muted); letter-spacing: 0.03em; }
+.an-pay-val { display: block; font-family: var(--font-display); font-weight: 800; font-size: 24px; color: var(--brand-ink); margin-top: 4px; }
+@media (max-width: 560px) { .an-pay { grid-template-columns: 1fr; } }
+
 /* ---- Door screen: nothing but a big QR ---- */
 .doorqr { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 6vh 20px; background: var(--bg); }
 .doorqr-brand { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 3.5vw, 34px); color: var(--brand-ink); display: flex; align-items: center; gap: 10px; }
