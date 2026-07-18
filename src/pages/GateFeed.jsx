@@ -6,6 +6,8 @@ import {
   subscribeActiveSession,
   subscribeSessionBookings,
   subscribeScanEvents,
+  subscribeMembers,
+  subscribeAllTopups,
   checkInMember,
   addCredit,
   logScanEvent,
@@ -28,6 +30,8 @@ export default function GateFeed({ control = false }) {
   const [events, setEvents] = useState([])
   const [session, setSession] = useState(null)
   const [bookings, setBookings] = useState([])
+  const [members, setMembers] = useState([])
+  const [topups, setTopups] = useState([])
   const [busy, setBusy] = useState(false)
   const [recharge, setRecharge] = useState(null) // { memberId, name, mobile, photoURL } | null
   const [moreOpen, setMoreOpen] = useState(false)
@@ -40,6 +44,8 @@ export default function GateFeed({ control = false }) {
   useEffect(() => subscribeScanEvents(setEvents, 50), [])
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => (session ? subscribeSessionBookings(session.id, setBookings) : undefined), [session])
+  useEffect(() => (control ? subscribeMembers(setMembers) : undefined), [control])
+  useEffect(() => (control ? subscribeAllTopups(setTopups) : undefined), [control])
   useEffect(() => { sessionRef.current = session }, [session])
   useEffect(() => {
     if (!control) return undefined
@@ -107,6 +113,16 @@ export default function GateFeed({ control = false }) {
   const insideNow = checkedIn.filter((b) => !b.exitedAt).reduce((n, b) => n + (b.peopleCount || 0), 0)
   const today = checkedIn.reduce((n, b) => n + (b.peopleCount || 0), 0)
 
+  // Live analytics shown right on the reception screen (control view only).
+  const fee = session?.feePerPerson ?? SESSION.feePerPerson
+  const enrolled = members.length
+  const lowBalance = useMemo(() => members.filter((m) => (m.balance || 0) < fee).length, [members, fee])
+  const paymentsToday = useMemo(() => {
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
+    const from = midnight.getTime() / 1000
+    return topups.filter((t) => (t.createdAt?.seconds || 0) >= from).reduce((n, t) => n + (t.amount || 0), 0)
+  }, [topups])
+
   const lineFor = {
     welcome: 'Entered',
     reentry: 'Welcome back',
@@ -163,6 +179,17 @@ export default function GateFeed({ control = false }) {
           )}
         </div>
       </header>
+
+      {control && (
+        <div className="gfeed-metrics">
+          <div className="gfm"><b>{enrolled}</b><span>Enrolled</span></div>
+          <div className="gfm"><b>{today}</b><span>Entered today</span></div>
+          <div className="gfm"><b>{insideNow}</b><span>Inside now</span></div>
+          <div className="gfm"><b>{CURRENCY}{paymentsToday}</b><span>Payments today</span></div>
+          <div className={`gfm ${lowBalance ? 'warn' : ''}`}><b>{lowBalance}</b><span>Low balance</span></div>
+          {isSuper && <Link className="gfm-link" to="/admin/command">Full analytics ›</Link>}
+        </div>
+      )}
 
       {control && !session && (
         <div className="gfeed-startbanner">Start the session to open the doors. Members can’t check in until then.</div>

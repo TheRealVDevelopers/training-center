@@ -719,6 +719,16 @@ a:hover { text-decoration: underline; }
 .recharge-credits, .recharge-methods { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .recharge-amt { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--brand-ink); margin-bottom: 14px; }
 
+/* Reception live stats strip — analytics right on the main screen */
+.gfeed-metrics { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); background: rgba(15, 23, 19, 0.55); }
+.gfm { flex: 1 1 120px; min-width: 110px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; text-align: center; }
+.gfm b { display: block; font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--brand-ink); line-height: 1.1; }
+.gfm span { font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.gfm.warn { border-color: rgba(226, 69, 58, 0.5); background: rgba(226, 69, 58, 0.08); }
+.gfm.warn b { color: var(--danger); }
+.gfm-link { flex: none; font-weight: 800; font-size: 13px; color: var(--brand-ink); text-decoration: none; padding: 0 6px; }
+.gfm-link:hover { text-decoration: underline; }
+
 /* ---- Analytics ---- */
 .an-stats .mstat { border: 1px solid var(--line); }
 .an-pay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
