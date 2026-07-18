@@ -6,15 +6,12 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import BookingView from './pages/BookingView'
-import Scan from './pages/Scan'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminCredits from './pages/AdminCredits'
 import AdminReport from './pages/AdminReport'
 import SuperAdmin from './pages/SuperAdmin'
 import Profile from './pages/Profile'
-import CardScan from './pages/CardScan'
 import Door from './pages/Door'
-import Station from './pages/Station'
 import GateFeed from './pages/GateFeed'
 import CardPrint from './pages/CardPrint'
 import CardStudio from './pages/CardStudio'
@@ -33,17 +30,14 @@ export default function App() {
       <Route path="/super" element={<SuperAdmin />} />
 
       {/* Code-gated: volunteers/staff type a 6-digit code (owner bypasses) */}
-      <Route path="/scan" element={<CodeGate kind="scanner" label="Scanner"><Scan /></CodeGate>} />
-      <Route path="/card" element={<CodeGate kind="scanner" label="Card Scanner"><CardScan /></CodeGate>} />
       <Route path="/door" element={<CodeGate kind="scanner" label="Door"><Door /></CodeGate>} />
-      <Route path="/station" element={<CodeGate kind="admin" label="Station Hub"><Station /></CodeGate>} />
       <Route path="/feed" element={<CodeGate kind="scanner" label="Live Board"><GateFeed /></CodeGate>} />
       <Route path="/admin/card/:id" element={<CodeGate kind="admin" label="Print Card"><CardPrint /></CodeGate>} />
       <Route path="/admin/print" element={<CodeGate kind="admin" label="Card Studio"><CardStudio /></CodeGate>} />
       <Route path="/admin/testcard" element={<CodeGate kind="admin" label="Printer Test"><TestCard /></CodeGate>} />
-      {/* /admin is now the simple Live Board (with session controls);
-          the detailed Command Center moved to /admin/command */}
-      <Route path="/admin" element={<CodeGate kind="admin" label="Live Board"><GateFeed control /></CodeGate>} />
+      {/* /admin is the single Reception live board (readers + recharge + session);
+          the detailed Command Center is owner-only at /admin/command */}
+      <Route path="/admin" element={<CodeGate kind="admin" label="Reception"><GateFeed control /></CodeGate>} />
       <Route path="/admin/command" element={<CodeGate kind="admin" label="Command Center"><AdminDashboard /></CodeGate>} />
       <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
       <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />

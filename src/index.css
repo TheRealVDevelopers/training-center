@@ -681,6 +681,51 @@ a:hover { text-decoration: underline; }
 .gfeed-cr.low { color: var(--danger); }
 .gfeed-time { font-size: 11.5px; font-weight: 700; color: var(--muted); }
 
+/* NO CREDITS — a loud red row the receptionist can't miss, one-tap recharge. */
+.gfeed-row.nocredit {
+  border: 1px solid rgba(226, 69, 58, 0.55); border-left: 6px solid var(--danger);
+  background: linear-gradient(90deg, rgba(226, 69, 58, 0.16), rgba(226, 69, 58, 0.05));
+  animation: rise 0.3s ease both, nocreditPulse 1.6s ease-in-out infinite;
+}
+@keyframes nocreditPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(226, 69, 58, 0); } 50% { box-shadow: 0 0 0 3px rgba(226, 69, 58, 0.18); } }
+.gfeed-row.nocredit .gfeed-mark { color: var(--danger); }
+.gfeed-row.nocredit .gfeed-line { color: #ff8a80; font-weight: 800; letter-spacing: 0.01em; }
+.gfeed-row.clickable { cursor: pointer; }
+.gfeed-recharge {
+  display: inline-block; border: none; border-radius: 999px; padding: 9px 15px; cursor: pointer;
+  font-family: inherit; font-weight: 800; font-size: 13px; color: #fff; background: var(--danger);
+  box-shadow: 0 4px 14px rgba(226, 69, 58, 0.4); white-space: nowrap;
+}
+.gfeed-recharge:hover { filter: brightness(1.08); }
+
+/* Owner "More" menu on the reception header */
+.gfeed-more { position: relative; }
+.gfeed-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 190px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5); padding: 6px; display: grid; gap: 2px;
+}
+.gfeed-menu a { padding: 10px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; color: var(--ink); text-decoration: none; }
+.gfeed-menu a:hover { background: var(--surface-2); }
+
+/* Inline recharge panel (reception board) */
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.recharge-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(4, 8, 6, 0.62); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 16px; animation: fade 0.18s ease both; }
+.recharge-panel { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); padding: 20px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); animation: rise 0.22s ease both; }
+.recharge-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.recharge-head img, .recharge-head .avatar-fallback { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex: none; }
+.recharge-head > div { flex: 1; min-width: 0; }
+.recharge-name { font-family: var(--font-display); font-weight: 800; font-size: 19px; }
+.recharge-credits, .recharge-methods { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.recharge-amt { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--brand-ink); margin-bottom: 14px; }
+
+/* ---- Door screen: nothing but a big QR ---- */
+.doorqr { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 6vh 20px; background: var(--bg); }
+.doorqr-brand { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 3.5vw, 34px); color: var(--brand-ink); display: flex; align-items: center; gap: 10px; }
+.doorqr-card { background: #fff; border-radius: 28px; padding: clamp(18px, 3vw, 34px); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45); }
+.doorqr-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 3vw, 30px); }
+.doorqr-sub { color: var(--muted); font-weight: 700; font-size: clamp(14px, 1.8vw, 18px); max-width: 520px; }
+
 /* ---- Card print (CR80 85.6 x 54 mm) ---- */
 .cardprint-page { min-height: 100vh; padding: 18px; display: grid; gap: 16px; justify-items: center; align-content: start; }
 .cardprint-bar { width: 100%; max-width: 720px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }

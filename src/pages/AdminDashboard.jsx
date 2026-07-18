@@ -195,11 +195,10 @@ export default function AdminDashboard() {
         <div className="live-pill"><span className="live-dot" />LIVE · {clock}</div>
         <div className="row gap cmd-actions">
           {isSuper && <Link className="btn ghost small" to="/super">Super Admin</Link>}
+          <Link className="btn ghost small" to="/admin">Reception</Link>
           <Link className="btn ghost small" to="/admin/credits">Credits</Link>
           <Link className="btn ghost small" to="/admin/report">Report</Link>
-          <Link className="btn ghost small" to="/door?gate=1" target="_blank">Door 1</Link>
-          <Link className="btn ghost small" to="/door?gate=2" target="_blank">Door 2</Link>
-          <Link className="btn ghost small" to="/scan?gate=1" target="_blank">Open scanner</Link>
+          <Link className="btn ghost small" to="/door" target="_blank">Door QR</Link>
           <button className="btn ghost small" onClick={toggleMute} title="Entry sound">{muted ? '🔕' : '🔔'}</button>
           <button className="btn danger small" onClick={handleEnd} disabled={busy}>End session</button>
           {lockOrLogout}

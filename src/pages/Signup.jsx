@@ -49,11 +49,18 @@ export default function Signup() {
         </div>
 
         <label className="avatar-upload" title="Add your photo">
-          <input type="file" accept="image/*" capture="user" onChange={onPhoto} style={{ display: 'none' }} />
+          {/* No `capture` attribute → the OS picker offers BOTH "Take photo" and
+              "Choose from gallery/files", instead of forcing the camera open. */}
+          <input type="file" accept="image/*" onChange={onPhoto} style={{ display: 'none' }} />
           {preview
             ? <img src={preview} alt="" />
-            : <span className="avatar-upload-ph">📷<span>Add photo</span></span>}
+            : <span className="avatar-upload-ph">📷<span>Add / upload photo</span></span>}
         </label>
+        {preview && (
+          <button type="button" className="btn ghost small" style={{ margin: '0 auto 4px', display: 'block' }} onClick={() => { setPhoto(null); setPreview('') }}>
+            Remove photo
+          </button>
+        )}
 
         <label>Full name *</label>
         <input value={form.name} onChange={set('name')} required />

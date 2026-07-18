@@ -9,12 +9,17 @@ export const SESSION = {
 // Max guests a single member can book per session.
 export const MAX_GUESTS_PER_SESSION = 3
 
+// One-click reception recharge: everyone tops up in blocks of this many credits
+// (price differs per team, but the credit count is the same). One credit = one
+// entry = SESSION.feePerPerson.
+export const RECHARGE_CREDITS = 5
+
 // Walk-in mode: members just tap their card / show their permanent QR to enter
 // (no booking step). Set false to fall back to the older book-a-slot flow.
 export const WALKIN_MODE = true
 
 // The SUPER ADMIN (owner). Only this email, logged in, can open /super to
-// generate the access codes — and is auto-allowed into /admin and /scan
+// generate the access codes — and is auto-allowed into /admin and /door
 // without needing a code. Everyone else uses a 6-digit code instead of an
 // account (see CodeGate + SuperAdmin).
 export const SUPER_ADMIN_EMAILS = [

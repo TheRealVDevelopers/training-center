@@ -98,7 +98,7 @@ function Panel({ logout }) {
         <>
           <div className="row between" style={{ margin: '4px 2px 10px' }}>
             <span className="live-pill"><span className="live-dot" />SESSION LIVE</span>
-            <Link className="btn ghost small" to="/admin">Open Command Center ›</Link>
+            <Link className="btn ghost small" to="/admin">Open Reception ›</Link>
           </div>
           <section className="mstats">
             <div className="mstat"><div className="mstat-val">{inside}</div><div className="mstat-lbl">Inside now</div></div>
@@ -107,7 +107,7 @@ function Panel({ logout }) {
           </section>
         </>
       ) : (
-        <div className="banner">No session running. Start one from the <Link to="/admin">Command Center</Link>.</div>
+        <div className="banner">No session running. Start one from <Link to="/admin">Reception</Link>.</div>
       )}
 
       {/* Stations — one tap to open any screen */}
@@ -115,21 +115,26 @@ function Panel({ logout }) {
       <div className="stations-grid">
         <Link className="station-tile" to="/admin">
           <span className="station-ico">🖥️</span>
-          <span className="station-t">Live Board</span>
-          <span className="station-s">Main screen · who's entering + session control</span>
+          <span className="station-t">Reception</span>
+          <span className="station-s">Main screen · live entries · recharge · session control</span>
+        </Link>
+        <Link className="station-tile" to="/admin/credits">
+          <span className="station-ico">💰</span>
+          <span className="station-t">Credits &amp; cards</span>
+          <span className="station-s">Recharge · assign / write member cards</span>
+        </Link>
+        <Link className="station-tile" to="/door" target="_blank">
+          <span className="station-ico">🚪</span>
+          <span className="station-t">Door screen</span>
+          <span className="station-s">QR sign — scan to watch entries on a phone</span>
         </Link>
         <Link className="station-tile" to="/admin/command">
           <span className="station-ico">📊</span>
           <span className="station-t">Analytics</span>
           <span className="station-s">Detailed Command Center (owner)</span>
         </Link>
-        <Link className="station-tile" to="/admin/credits">
-          <span className="station-ico">💰</span>
-          <span className="station-t">Reception · Credits</span>
-          <span className="station-s">Recharge · assign cards</span>
-        </Link>
         <Link className="station-tile" to="/admin/report">
-          <span className="station-ico">📊</span>
+          <span className="station-ico">🧾</span>
           <span className="station-t">Daily report</span>
           <span className="station-s">Attendance · cash reconciliation</span>
         </Link>
@@ -137,36 +142,6 @@ function Panel({ logout }) {
           <span className="station-ico">🖨️</span>
           <span className="station-t">Card Studio</span>
           <span className="station-s">Print member cards by level</span>
-        </Link>
-        <Link className="station-tile" to="/station" target="_blank">
-          <span className="station-ico">🎛️</span>
-          <span className="station-t">Station Hub</span>
-          <span className="station-s">Registration PC · both door readers</span>
-        </Link>
-        <Link className="station-tile" to="/feed" target="_blank">
-          <span className="station-ico">📡</span>
-          <span className="station-t">Gate Feed</span>
-          <span className="station-s">Door tablets · live ✓/✗ stream</span>
-        </Link>
-        <Link className="station-tile" to="/door?gate=1" target="_blank">
-          <span className="station-ico">🚪</span>
-          <span className="station-t">Door 1</span>
-          <span className="station-s">Tap-in screen (wall tablet)</span>
-        </Link>
-        <Link className="station-tile" to="/door?gate=2" target="_blank">
-          <span className="station-ico">🚪</span>
-          <span className="station-t">Door 2</span>
-          <span className="station-s">Tap-in screen (wall tablet)</span>
-        </Link>
-        <Link className="station-tile" to="/card" target="_blank">
-          <span className="station-ico">💳</span>
-          <span className="station-t">Card scanner</span>
-          <span className="station-s">Simple tap-to-enter screen</span>
-        </Link>
-        <Link className="station-tile" to="/scan?gate=1" target="_blank">
-          <span className="station-ico">📷</span>
-          <span className="station-t">QR scanner</span>
-          <span className="station-s">Camera scanning at the door</span>
         </Link>
         <Link className="station-tile" to="/">
           <span className="station-ico">🌿</span>
@@ -187,7 +162,7 @@ function Panel({ logout }) {
       <h3 className="section-h">Staff access codes</h3>
       <div className="codes-grid">
         <CodeRow title="Admin code" subtitle="desk staff · dashboard & credits" value={codes.adminCode} onSet={(c) => setAccessCode('adminCode', c)} />
-        <CodeRow title="Scanner code" subtitle="door staff · door / card / QR pages" value={codes.scannerCode} onSet={(c) => setAccessCode('scannerCode', c)} />
+        <CodeRow title="Door code" subtitle="door staff · door QR + live board" value={codes.scannerCode} onSet={(c) => setAccessCode('scannerCode', c)} />
         <CodeRow title="Card Write PIN" subtitle="required to assign / write a card" value={codes.writeCode} onSet={(c) => setAccessCode('writeCode', c)} />
       </div>
       <p className="muted small" style={{ margin: '2px 4px' }}>
