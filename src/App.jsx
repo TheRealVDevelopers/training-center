@@ -6,7 +6,6 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import BookingView from './pages/BookingView'
-import AdminDashboard from './pages/AdminDashboard'
 import AdminCredits from './pages/AdminCredits'
 import AdminReport from './pages/AdminReport'
 import SuperAdmin from './pages/SuperAdmin'
@@ -35,10 +34,10 @@ export default function App() {
       <Route path="/admin/card/:id" element={<CodeGate kind="admin" label="Print Card"><CardPrint /></CodeGate>} />
       <Route path="/admin/print" element={<CodeGate kind="admin" label="Card Studio"><CardStudio /></CodeGate>} />
       <Route path="/admin/testcard" element={<CodeGate kind="admin" label="Printer Test"><TestCard /></CodeGate>} />
-      {/* /admin is the single Reception live board (readers + recharge + session);
-          the detailed Command Center is owner-only at /admin/command */}
+      {/* /admin and /admin/command are the SAME live reception board
+          (readers + inline recharge + session control). */}
       <Route path="/admin" element={<CodeGate kind="admin" label="Reception"><GateFeed control /></CodeGate>} />
-      <Route path="/admin/command" element={<CodeGate kind="admin" label="Command Center"><AdminDashboard /></CodeGate>} />
+      <Route path="/admin/command" element={<CodeGate kind="admin" label="Reception"><GateFeed control /></CodeGate>} />
       <Route path="/admin/credits" element={<CodeGate kind="admin" label="Admin"><AdminCredits /></CodeGate>} />
       <Route path="/admin/report" element={<CodeGate kind="admin" label="Admin"><AdminReport /></CodeGate>} />
 
