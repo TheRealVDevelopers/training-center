@@ -12,6 +12,7 @@ import Door from './pages/Door'
 import CardStudio from './pages/CardStudio'
 import TestCard from './pages/TestCard'
 import Poster from './pages/Poster'
+import CardTrack from './pages/CardTrack'
 
 export default function App() {
   const { loading } = useAuth()
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/admin" element={<PinGate label="Reception"><Reception /></PinGate>} />
       <Route path="/admin/print" element={<PinGate label="Card Studio"><CardStudio /></PinGate>} />
       <Route path="/admin/testcard" element={<PinGate label="Printer test"><TestCard /></PinGate>} />
+      <Route path="/admin/cards" element={<PinGate label="Card Tracking"><CardTrack /></PinGate>} />
 
       {/* Owner — email login */}
       <Route path="/owner" element={<Owner />} />

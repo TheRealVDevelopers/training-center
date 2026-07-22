@@ -447,6 +447,7 @@ function PrintTab({ members }) {
         <p className="muted small">Pick a member — their level picks the card design — print. Mark Printed / Given on the People tab as you go.</p>
         <div className="actions">
           <Link className="btn big" to="/admin/print" target="_blank">Open Card Studio ›</Link>
+          <Link className="btn big" to="/admin/cards" target="_blank">Card tracking — printed / given ›</Link>
           <Link className="btn big" to="/admin/testcard" target="_blank">Printer test page ›</Link>
           <Link className="btn big" to="/door" target="_blank">Door QR screen ›</Link>
           <Link className="btn big" to="/signup" target="_blank">Signup page (share) ›</Link>

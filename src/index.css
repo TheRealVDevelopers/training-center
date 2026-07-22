@@ -1029,3 +1029,21 @@ label.inline select { margin: 0; }
 .csrow-main .mname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-ptoggle { width: 44px; flex: none; border: none; border-left: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 16px; font-weight: 800; cursor: pointer; }
 .cs-ptoggle.on { background: rgba(53, 224, 138, 0.16); color: var(--ok); }
+
+/* ---- Card Tracking ---- */
+.cs-ptoggle.half { background: rgba(255, 176, 46, 0.16); color: var(--warn); }
+.csrow.couplerow .couplename, .ctk-name.couplename { color: #ffb2d9; }
+.ctk-list { display: grid; gap: 8px; }
+.ctk-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 46%), var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.ctk-row.couple { border-color: rgba(255, 92, 138, 0.45); background: linear-gradient(150deg, rgba(255, 92, 138, 0.08), transparent 60%), var(--surface); }
+.ctk-row.done { opacity: 0.55; }
+.ctk-face { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex: none; }
+.ctk-face.fb { display: grid; place-items: center; background: var(--surface-2); color: var(--brand-ink); font-weight: 800; font-size: 17px; }
+.ctk-body { flex: 1; min-width: 0; }
+.ctk-name { font-family: var(--font-display); font-weight: 800; font-size: 16.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctk-sub { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+.ctk-chip { flex: none; border: 1.5px solid var(--line-2); background: var(--surface-2); color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12.5px; letter-spacing: 0.03em; padding: 9px 12px; border-radius: 999px; cursor: pointer; }
+.ctk-chip.half { border-color: rgba(255, 176, 46, 0.5); color: var(--warn); background: rgba(255, 176, 46, 0.1); }
+.ctk-chip.full { border-color: rgba(53, 224, 138, 0.5); color: var(--ok); background: rgba(53, 224, 138, 0.12); }
+.ctk-chip.give.full { border-color: rgba(0, 224, 122, 0.6); }
+@media (max-width: 620px) { .ctk-row { flex-wrap: wrap; } .ctk-body { flex-basis: 100%; } }

@@ -59,10 +59,27 @@ export default function CardStudio() {
   }
 
   // ---- Print queue: burn through the unprinted backlog fast ----------------
+  // Couples need TWO identical cards (one each), singles one. Progress is a
+  // count (printedCount), kept in sync with the cardPrinted flag other pages use.
+  const neededOf = (m) => (m.couple ? 2 : 1)
+  const printedOf = (m) => Math.min(neededOf(m), m.printedCount ?? (m.cardPrinted ? neededOf(m) : 0))
+  const remainingOf = (m) => neededOf(m) - printedOf(m)
+
+  const membersRef = useRef([])
+  useEffect(() => { membersRef.current = members }, [members])
+
   const unprinted = useMemo(
-    () => members.filter((m) => !m.cardPrinted).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
-    [members],
+    () => members.filter((m) => remainingOf(m) > 0).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [members], // eslint-disable-line react-hooks/exhaustive-deps
   )
+  const cardsLeft = unprinted.reduce((n, m) => n + remainingOf(m), 0)
+
+  function bumpPrinted(id) {
+    const m = membersRef.current.find((x) => x.id === id)
+    if (!m) return Promise.resolve()
+    const next = Math.min(neededOf(m), printedOf(m) + 1)
+    return updateMemberProfile(id, { printedCount: next, cardPrinted: next >= neededOf(m) })
+  }
   function jumpNext(excludeId) {
     const next = unprinted.find((m) => m.id !== excludeId)
     if (next) setSelected(next.id)
@@ -71,12 +88,16 @@ export default function CardStudio() {
   async function markPrintedNext() {
     if (!sel) return
     try {
-      await updateMemberProfile(sel.id, { cardPrinted: true })
-      jumpNext(sel.id)
+      await bumpPrinted(sel.id)
+      const stillLeft = remainingOf(sel) - 1 > 0 // this copy just printed
+      if (stillLeft) setMsg(`✓ Copy ${printedOf(sel) + 1} of ${neededOf(sel)} — print the second card for this couple`)
+      else jumpNext(sel.id)
     } catch (e) { setMsg(e.message) }
   }
   function togglePrinted(m) {
-    updateMemberProfile(m.id, { cardPrinted: !m.cardPrinted }).catch(() => {})
+    const needed = neededOf(m)
+    const next = (printedOf(m) + 1) % (needed + 1)
+    updateMemberProfile(m.id, { printedCount: next, cardPrinted: next >= needed }).catch(() => {})
   }
 
   // ---- BATCH: one click prints every unprinted card, hands-free ------------
@@ -87,9 +108,10 @@ export default function CardStudio() {
   const batchRef = useRef(null)
 
   function startBatch() {
-    const ids = unprinted.map((m) => m.id)
+    // Couples appear twice in the run — two identical cards, back to back.
+    const ids = unprinted.flatMap((m) => Array(remainingOf(m)).fill(m.id))
     if (!ids.length) return
-    if (!window.confirm(`Print ALL ${ids.length} unprinted cards now?\n\nMake sure the printer has enough blank cards and ribbon, and Chrome runs with --kiosk-printing (no dialogs).`)) return
+    if (!window.confirm(`Print ALL ${ids.length} unprinted cards now (couples get 2 copies)?\n\nMake sure the printer has enough blank cards and ribbon, and Chrome runs with --kiosk-printing (no dialogs).`)) return
     setPrintSide('both')
     const b = { ids, i: 0 }
     batchRef.current = b
@@ -106,7 +128,7 @@ export default function CardStudio() {
     function onAfterPrint() {
       const b = batchRef.current
       if (!b) return
-      updateMemberProfile(b.ids[b.i], { cardPrinted: true }).catch(() => {})
+      bumpPrinted(b.ids[b.i]).catch(() => {})
       const next = b.i + 1
       if (next >= b.ids.length) {
         batchRef.current = null
@@ -140,9 +162,10 @@ export default function CardStudio() {
               </>
             ) : (
               <>
-                <button className="btn primary small" onClick={startBatch} disabled={!unprinted.length}>
-                  🖨 Print ALL unprinted ({unprinted.length})
+                <button className="btn primary small" onClick={startBatch} disabled={!cardsLeft}>
+                  🖨 Print ALL unprinted ({cardsLeft})
                 </button>
+                <Link className="btn ghost small" to="/admin/cards">📋 Tracking</Link>
                 <button className="btn ghost small" onClick={() => jumpNext(null)} disabled={!unprinted.length}>▶ Next</button>
                 <Link className="btn ghost small" to="/admin/testcard">🎨 Test prints</Link>
                 <Link className="btn ghost small" to="/admin">‹ Reception</Link>
@@ -160,18 +183,18 @@ export default function CardStudio() {
             </p>
             <div className="memberlist">
               {filtered.map((m) => (
-                <div key={m.id} className={`memberrow csrow ${selected === m.id ? 'sel' : ''}`}>
+                <div key={m.id} className={`memberrow csrow ${selected === m.id ? 'sel' : ''} ${m.couple ? 'couplerow' : ''}`}>
                   <button className="csrow-main" onClick={() => setSelected(m.id)}>
                     {m.photoURL ? <img className="avatar xs" src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
-                    <span className="mname">{m.name}</span>
-                    <span className="muted small">{tierByKey(detectTier(m)).label}</span>
+                    <span className={`mname ${m.couple ? 'couplename' : ''}`}>{m.name}{m.couple ? ' 👫' : ''}</span>
+                    <span className="muted small">{tierByKey(detectTier(m)).label}{m.couple ? ' · ×2' : ''}</span>
                   </button>
                   <button
-                    className={`cs-ptoggle ${m.cardPrinted ? 'on' : ''}`}
-                    title={m.cardPrinted ? 'Card printed — click to unmark' : 'Mark as already printed'}
+                    className={`cs-ptoggle ${printedOf(m) >= neededOf(m) ? 'on' : printedOf(m) > 0 ? 'half' : ''}`}
+                    title={`Printed ${printedOf(m)} of ${neededOf(m)} — click to advance`}
                     onClick={() => togglePrinted(m)}
                   >
-                    {m.cardPrinted ? '✓' : '○'}
+                    {printedOf(m) >= neededOf(m) ? '✓' : printedOf(m) > 0 ? `${printedOf(m)}/${neededOf(m)}` : '○'}
                   </button>
                 </div>
               ))}
@@ -255,24 +278,28 @@ function CardFace({ member, tier, side, print }) {
   const since = hasYrs ? new Date().getFullYear() - yrs : null
   const img = side === 'front' ? tier.frontImage : tier.backImage
   const ac = tier.printAccent
+  // The YMCKO ribbon has NO white — "white" is bare card showing through and
+  // reads as a shiny gap. So everything on the colored zone prints in the
+  // tier's LIGHT accent instead: real ink, real contrast.
+  const lite = tier.accent || '#f0e2b6'
 
   const grad = `linear-gradient(135deg, ${ac} 0%, ${tier.bgDark || ac} 100%)`
 
   return (
     <div className={`pc-face cs-face pr-face ${print ? 'print' : ''}`} style={{ background: grad }}>
       {img && <img className="pc-bg" src={img} alt="" />}
-      <Guilloche color="#ffffff" />
-      <span className="pr-frame" />
-      <span className="pr-frame2" />
+      <Guilloche color={lite} />
+      <span className="pr-frame" style={{ borderColor: `${lite}88` }} />
+      <span className="pr-frame2" style={{ borderColor: `${lite}55` }} />
 
       {side === 'front' ? (
         <>
           {tier.points && <PointsSeal points={tier.points} />}
           <div className="pr-colorzone">
             <div className="pr-toprow">
-              <span className="pr-club">🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
+              <span className="pr-club" style={{ color: lite }}>🌿 {(member.clubName || 'HERBALIFE NUTRITION CLUB').toUpperCase()}</span>
             </div>
-            <div className="pr-chiprow"><Chip /><Waves color="#ffffff" /><span className="pr-nfc">NFC</span></div>
+            <div className="pr-chiprow"><Chip /><Waves color={lite} /><span className="pr-nfc" style={{ color: lite }}>NFC</span></div>
           </div>
           <div className="pr-panel">
             <div className="pr-plevel" style={{ color: ac }}>{tier.label.toUpperCase()}</div>
