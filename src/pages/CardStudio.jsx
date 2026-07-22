@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
-import { subscribeMembers, updateMemberProfile, ensureMemberToken } from '../lib/db'
+import { subscribeMembers, updateMemberProfile, ensureMemberToken, addMemberDirect } from '../lib/db'
+import { TIERS } from '../config'
 import { CARD_TIERS, tierByKey, detectTier, KEY_TO_TIER } from '../cards/cardTiers'
 
 // Card Studio — the printing desk. Pick a member, their level picks the design
@@ -100,6 +101,28 @@ export default function CardStudio() {
     updateMemberProfile(m.id, { printedCount: next, cardPrinted: next >= needed }).catch(() => {})
   }
 
+  // ---- Quick create: type a name + level -> card ready to print ------------
+  // For people who won't sign up themselves (e.g. the club owner): no email,
+  // no login — the profile + QR are created instantly and the card prints.
+  const [creating, setCreating] = useState(false)
+  const [nf, setNf] = useState({ name: '', tier: 'Associate', clubName: '', couple: false })
+  const [creatingBusy, setCreatingBusy] = useState(false)
+  async function createAndSelect() {
+    if (!nf.name.trim()) return
+    setCreatingBusy(true)
+    try {
+      const id = await addMemberDirect(nf)
+      setCreating(false)
+      setNf({ name: '', tier: 'Associate', clubName: '', couple: false })
+      setSelected(id)
+      setMsg(`✓ ${nf.name} created — print the card`)
+    } catch (e) {
+      setMsg(e.message)
+    } finally {
+      setCreatingBusy(false)
+    }
+  }
+
   // ---- BATCH: one click prints every unprinted card, hands-free ------------
   // Chrome on the station PC runs with --kiosk-printing, so each print goes
   // straight to the Evolis with no dialog; 'afterprint' fires when the job is
@@ -176,6 +199,9 @@ export default function CardStudio() {
 
         <div className="cs-cols">
           <div className="card cs-left">
+            <button className="btn primary block" onClick={() => setCreating(true)} style={{ marginBottom: 10 }}>
+              ＋ New card (no signup — just name &amp; level)
+            </button>
             <label>Search member</label>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name or mobile…" />
             <p className="muted small" style={{ margin: '8px 0 0' }}>
@@ -248,6 +274,36 @@ export default function CardStudio() {
           </div>
         </div>
       </div>
+
+      {/* Quick-create panel */}
+      {creating && (
+        <div className="recharge-overlay" onClick={() => setCreating(false)}>
+          <div className="recharge-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="recharge-head">
+              <div>
+                <div className="recharge-name">New card</div>
+                <div className="muted small">No smartphone or signup needed — type, print, hand over.</div>
+              </div>
+              <button className="btn ghost small" onClick={() => setCreating(false)}>✕</button>
+            </div>
+            <label>Name *</label>
+            <input value={nf.name} onChange={(e) => setNf({ ...nf, name: e.target.value })} autoFocus placeholder="e.g. Club Owner Madam" />
+            <label>Level</label>
+            <select value={nf.tier} onChange={(e) => setNf({ ...nf, tier: e.target.value })}>
+              {Object.keys(TIERS).map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <label>Club name (optional)</label>
+            <input value={nf.clubName} onChange={(e) => setNf({ ...nf, clubName: e.target.value })} />
+            <label className="row gap" style={{ alignItems: 'center', marginTop: 8 }}>
+              <input type="checkbox" checked={nf.couple} onChange={(e) => setNf({ ...nf, couple: e.target.checked })} style={{ width: 'auto' }} />
+              Couple — needs 2 cards
+            </label>
+            <button className="btn primary block" disabled={creatingBusy || !nf.name.trim()} onClick={createAndSelect}>
+              {creatingBusy ? 'Creating…' : 'Create → ready to print'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Print zone — the only thing the printer sees. 'both' renders two
           pages in one job; the Asmi flips the card and prints both sides. */}
@@ -376,18 +432,12 @@ function PointsSeal({ points }) {
     const a = (i / scallops) * Math.PI * 2
     return `${(50 + 46 * Math.cos(a)).toFixed(1)},${(50 + 46 * Math.sin(a)).toFixed(1)}`
   }).join(' ')
+  // Solid golds only — no gradient defs, so it always prints filled.
   return (
     <svg className="pr-seal" viewBox="0 0 100 100" aria-hidden="true">
-      <defs>
-        <radialGradient id="sealgold" cx="0.4" cy="0.35" r="0.75">
-          <stop offset="0" stopColor="#fbe9ad" />
-          <stop offset="0.55" stopColor="#e6c460" />
-          <stop offset="1" stopColor="#b8933f" />
-        </radialGradient>
-      </defs>
-      <polygon points={petals} fill="url(#sealgold)" stroke="#8a6a2a" strokeWidth="1" opacity="0.5" transform="rotate(6.4 50 50)" />
-      <circle cx="50" cy="50" r="41" fill="url(#sealgold)" stroke="#fff" strokeWidth="1.6" />
-      <circle cx="50" cy="50" r="35" fill="none" stroke="#8a6a2a" strokeWidth="0.8" opacity="0.7" />
+      <polygon points={petals} fill="#c9a23a" stroke="#8a6a2a" strokeWidth="1" opacity="0.6" transform="rotate(6.4 50 50)" />
+      <circle cx="50" cy="50" r="41" fill="#e8c760" stroke="#8a6a2a" strokeWidth="1.2" />
+      <circle cx="50" cy="50" r="35" fill="none" stroke="#8a6a2a" strokeWidth="0.8" opacity="0.8" />
       <text x="50" y="46" textAnchor="middle" fontFamily="'Sora',sans-serif" fontWeight="800" fontSize="26" fill="#5a3d0c">{points}</text>
       <text x="50" y="63" textAnchor="middle" fontFamily="'Sora',sans-serif" fontWeight="800" fontSize="11" letterSpacing="2" fill="#5a3d0c">POINTS</text>
     </svg>
@@ -398,16 +448,10 @@ function PointsSeal({ points }) {
 function Chip() {
   return (
     <svg className="pr-chip" viewBox="0 0 30 24" aria-hidden="true">
-      <defs>
-        <linearGradient id="chipgold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f6dc93" />
-          <stop offset="0.5" stopColor="#d9b25c" />
-          <stop offset="1" stopColor="#b8934a" />
-        </linearGradient>
-      </defs>
-      <rect x="0.8" y="0.8" width="28.4" height="22.4" rx="3.6" fill="url(#chipgold)" stroke="#8a6d33" strokeWidth="0.6" />
+      {/* Solid gold fill — no gradient defs, so the chip always prints filled. */}
+      <rect x="0.8" y="0.8" width="28.4" height="22.4" rx="3.6" fill="#e2bb52" stroke="#8a6d33" strokeWidth="0.8" />
       <path d="M 0.8 8 H 10 M 0.8 16 H 10 M 20 8 H 29.2 M 20 16 H 29.2 M 15 0.8 V 6 M 15 18 V 23.2 M 10 8 C 13 9.5, 13 14.5, 10 16 M 20 8 C 17 9.5, 17 14.5, 20 16"
-        fill="none" stroke="#8a6d33" strokeWidth="0.7" />
+        fill="none" stroke="#8a6d33" strokeWidth="0.8" />
     </svg>
   )
 }
