@@ -69,6 +69,11 @@ function Panel({ logout }) {
           <span className="station-t">Credits &amp; cards</span>
           <span className="station-s">Recharge · assign / write member cards</span>
         </Link>
+        <Link className="station-tile" to="/admin/cards">
+          <span className="station-ico">🪪</span>
+          <span className="station-t">Card tracking</span>
+          <span className="station-s">Who's printed · who's got their card</span>
+        </Link>
         <Link className="station-tile" to="/door" target="_blank">
           <span className="station-ico">🚪</span>
           <span className="station-t">Door screen</span>

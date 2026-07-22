@@ -163,6 +163,7 @@ export default function GateFeed({ control = false }) {
                 {moreOpen && (
                   <div className="gfeed-menu" onClick={() => setMoreOpen(false)}>
                     <Link to="/admin/credits">💰 Credits &amp; cards</Link>
+                    <Link to="/admin/cards">🪪 Card tracking</Link>
                     <Link to="/admin/command">📊 Analytics</Link>
                     <Link to="/admin/report">🧾 Daily report</Link>
                     <Link to="/super">🛡️ Super Admin</Link>

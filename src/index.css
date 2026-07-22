@@ -732,6 +732,18 @@ a:hover { text-decoration: underline; }
 .gfm-link { flex: none; font-weight: 800; font-size: 13px; color: var(--brand-ink); text-decoration: none; padding: 0 6px; }
 .gfm-link:hover { text-decoration: underline; }
 
+/* ---- Card tracking ---- */
+.cardtrack-list { display: grid; gap: 8px; margin-top: 12px; }
+.cardtrack-row { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; flex-wrap: wrap; }
+.cardtrack-who { flex: 1; min-width: 140px; }
+.cardtrack-name { font-weight: 800; }
+.ct-toggle { border: 1.5px solid var(--line-2); background: var(--surface); color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12.5px; padding: 8px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.ct-toggle:hover { border-color: var(--brand); }
+.ct-toggle.on.printed { background: #eafaf0; border-color: var(--ok); color: var(--brand-ink); }
+.ct-toggle.on.given { background: var(--grad); border-color: transparent; color: #06210f; }
+.ct-toggle.on.couple { background: #fff3d6; border-color: #e0b74e; color: #7a5600; }
+.ct-toggle:disabled { opacity: 0.5; cursor: default; }
+
 /* ---- Analytics ---- */
 .an-stats .mstat { border: 1px solid var(--line); }
 .an-pay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }

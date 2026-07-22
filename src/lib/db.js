@@ -48,6 +48,9 @@ export async function createMemberProfile(uid, data) {
     // Singles own their own wallet. partnerId is the spouse (for cards/display).
     walletOwnerId: uid,
     partnerId: data.partnerId || null,
+    couple: !!data.couple, // registered as a couple → needs 2 printed cards
+    cardPrinted: false, // fulfilment tracking (Card Tracking page)
+    cardGiven: false,
     memberToken: makeToken(), // permanent — powers the entry QR + NFC card
     role: 'member',
     createdAt: serverTimestamp(),

@@ -9,6 +9,7 @@ import BookingView from './pages/BookingView'
 import AdminCredits from './pages/AdminCredits'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminReport from './pages/AdminReport'
+import CardTracking from './pages/CardTracking'
 import SuperAdmin from './pages/SuperAdmin'
 import Profile from './pages/Profile'
 import Door from './pages/Door'
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/admin" element={<GateFeed control />} />
       <Route path="/admin/command" element={<AdminAnalytics />} />
       <Route path="/admin/credits" element={<AdminCredits />} />
+      <Route path="/admin/cards" element={<CardTracking />} />
       <Route path="/admin/report" element={<AdminReport />} />
 
       {/* Member routes (account login) */}
