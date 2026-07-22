@@ -7,3 +7,5 @@ dist
 .firebase/
 card-bridge/*.dll
 backups/
+*adminsdk*.json
+serviceAccount*.json
