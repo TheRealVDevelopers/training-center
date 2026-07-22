@@ -5,6 +5,7 @@ import {
   subscribeActiveSession,
   subscribeSessionBookings,
   subscribeAllTopups,
+  deleteTopup,
 } from '../lib/db'
 
 // End-of-day summary for the owner: who came, money in (top-ups by cash/UPI),
@@ -13,6 +14,21 @@ export default function AdminReport() {
   const [session, setSession] = useState(null)
   const [bookings, setBookings] = useState([])
   const [topups, setTopups] = useState([])
+  const [deletingId, setDeletingId] = useState('')
+
+  async function removePayment(t) {
+    if (!window.confirm(
+      `Delete this ${CURRENCY}${t.amount} payment?\n\nThis removes it from the report and subtracts ${CURRENCY}${t.amount} back from the member's balance. This can't be undone.`,
+    )) return
+    setDeletingId(t.id)
+    try {
+      await deleteTopup(t.id)
+    } catch (e) {
+      alert(e.message || 'Could not delete payment')
+    } finally {
+      setDeletingId('')
+    }
+  }
 
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => (session ? subscribeSessionBookings(session.id, setBookings) : undefined), [session])
@@ -101,6 +117,14 @@ export default function AdminReport() {
                   <span className="rl-note">{t.note}{t.ref ? ` · ${t.ref}` : ''}</span>
                   <span className="rl-time">{fmtTime(t.createdAt)}</span>
                   <b className="pos">+{CURRENCY}{t.amount}</b>
+                  <button
+                    className="rl-del no-print"
+                    title="Delete this payment"
+                    disabled={deletingId === t.id}
+                    onClick={() => removePayment(t)}
+                  >
+                    {deletingId === t.id ? '…' : '🗑'}
+                  </button>
                 </div>
               ))}
           </div>

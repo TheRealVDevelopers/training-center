@@ -233,6 +233,28 @@ export function subscribeAllTopups(cb) {
   return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
 }
 
+// Delete a payment (top-up) and reverse its effect: the amount is subtracted
+// back from the member's balance (clamped at 0 so it can't go negative if some
+// of it was already spent). Use to undo a mistaken recharge.
+export async function deleteTopup(topupId) {
+  await runTransaction(db, async (tx) => {
+    const tRef = doc(db, 'transactions', topupId)
+    const tSnap = await tx.get(tRef)
+    if (!tSnap.exists()) throw new Error('Payment not found')
+    const t = tSnap.data()
+    if (t.type !== 'topup') throw new Error('Only a top-up can be deleted here')
+    if (t.memberId) {
+      const mRef = doc(db, 'members', t.memberId)
+      const mSnap = await tx.get(mRef)
+      if (mSnap.exists()) {
+        const bal = mSnap.data().balance || 0
+        tx.update(mRef, { balance: Math.max(0, bal - (t.amount || 0)) })
+      }
+    }
+    tx.delete(tRef)
+  })
+}
+
 // ---- Access codes (super admin sets; admin/scanner pages check) -----------
 
 export function subscribeAccessCodes(cb) {
