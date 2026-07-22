@@ -334,11 +334,10 @@ function CardFace({ member, tier, side, print }) {
   const since = hasYrs ? new Date().getFullYear() - yrs : null
   const img = side === 'front' ? tier.frontImage : tier.backImage
   const ac = tier.printAccent
-  // The YMCKO ribbon has NO white — "white" is bare card showing through and
-  // reads as a shiny gap. Light tints barely lay ink either. So everything on
-  // the colored zone prints in WARM GOLD (same family as the chip): solid ink,
-  // readable on every tier color including the black President's card.
-  const lite = '#e8c964'
+  // White here is knockout (bare card showing through the color) — which looks
+  // crisp as long as the type is BIG and BOLD. Small thin white text is what
+  // printed badly, so the colored-zone type is sized up instead.
+  const lite = '#ffffff'
 
   const grad = `linear-gradient(135deg, ${ac} 0%, ${tier.bgDark || ac} 100%)`
 

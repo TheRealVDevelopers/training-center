@@ -950,11 +950,12 @@ label.inline select { margin: 0; }
 /* Color zone (top) with chip + club, over the level-color background */
 .pr-colorzone { position: relative; z-index: 1; padding: 4.2mm 5mm 0; }
 .pr-toprow { display: flex; justify-content: space-between; align-items: center; gap: 3mm; }
-.pr-club { font-size: 2.2mm; font-weight: 800; letter-spacing: 0.14em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pr-waves { width: 6mm; height: 6mm; flex: none; }
+/* Big + bold: large knockout-white prints crisp; small thin white doesn't. */
+.pr-club { font-size: 3.4mm; font-weight: 800; letter-spacing: 0.08em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-waves { width: 7.5mm; height: 7.5mm; flex: none; }
 .pr-chiprow { display: flex; align-items: center; gap: 2.6mm; margin-top: 3mm; }
 .pr-chip { width: 10.5mm; height: 8.4mm; }
-.pr-nfc { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.9); }
+.pr-nfc { font-size: 2.8mm; font-weight: 800; letter-spacing: 0.14em; color: #fff; }
 
 /* Ivory info panel — ALL text pure black here, so it prints razor-sharp */
 .pr-panel {
