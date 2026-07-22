@@ -116,3 +116,8 @@ export function detectTier(member) {
   }
   return TIER_TO_KEY[member?.tier] || 'associate'
 }
+
+// Card-design key → the pricing tier name stored on the member (config.TIERS).
+export const KEY_TO_TIER = Object.fromEntries(
+  Object.entries(TIER_TO_KEY).map(([tier, key]) => [key, tier]),
+)

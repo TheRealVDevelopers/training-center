@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { subscribeMembers, updateMemberProfile, ensureMemberToken } from '../lib/db'
-import { CARD_TIERS, tierByKey, detectTier } from '../cards/cardTiers'
+import { CARD_TIERS, tierByKey, detectTier, KEY_TO_TIER } from '../cards/cardTiers'
 
 // Card Studio — the printing desk. Pick a member, their level picks the design
 // automatically (dropdown to correct it — the correction is saved), then Print
@@ -43,7 +43,9 @@ export default function CardStudio() {
     setTierKey(key)
     if (!sel) return
     try {
-      await updateMemberProfile(sel.id, { level: key })
+      // Save the PRICING tier (the same field the Owner page uses) so the
+      // card design and their pack price always agree.
+      await updateMemberProfile(sel.id, { tier: KEY_TO_TIER[key] || 'Associate', tierNeedsReview: false })
       setMsg(`✓ Level saved: ${tierByKey(key).label}`)
       setTimeout(() => setMsg(''), 2500)
     } catch (e) {
@@ -56,6 +58,24 @@ export default function CardStudio() {
     setTimeout(() => window.print(), 80) // let the print zone re-render first
   }
 
+  // ---- Print queue: burn through the unprinted backlog fast ----------------
+  const unprinted = useMemo(
+    () => members.filter((m) => !m.cardPrinted).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [members],
+  )
+  function jumpNext(excludeId) {
+    const next = unprinted.find((m) => m.id !== excludeId)
+    if (next) setSelected(next.id)
+    else setMsg('🎉 All cards printed!')
+  }
+  async function markPrintedNext() {
+    if (!sel) return
+    try {
+      await updateMemberProfile(sel.id, { cardPrinted: true })
+      jumpNext(sel.id)
+    } catch (e) { setMsg(e.message) }
+  }
+
   return (
     <div className="page wide cardstudio">
       <div className="cardstudio-ui">
@@ -65,8 +85,10 @@ export default function CardStudio() {
             <div className="muted small">Select member → design picks itself → print</div>
           </div>
           <div className="row gap">
+            <span className="live-pill">{unprinted.length} card{unprinted.length === 1 ? '' : 's'} to print</span>
+            <button className="btn ghost small" onClick={() => jumpNext(null)} disabled={!unprinted.length}>▶ Next unprinted</button>
             <Link className="btn ghost small" to="/admin/testcard">🎨 Test prints</Link>
-            <Link className="btn ghost small" to="/admin/credits">‹ Reception</Link>
+            <Link className="btn ghost small" to="/admin">‹ Reception</Link>
           </div>
         </header>
 
@@ -81,7 +103,7 @@ export default function CardStudio() {
                     {m.photoURL ? <img className="avatar xs" src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
                     <span className="mname">{m.name}</span>
                   </span>
-                  <span className="muted small">{tierByKey(detectTier(m)).label}</span>
+                  <span className="muted small">{m.cardPrinted ? '✓ ' : ''}{tierByKey(detectTier(m)).label}</span>
                 </button>
               ))}
               {filtered.length === 0 && <div className="muted small">No members match.</div>}
@@ -113,8 +135,15 @@ export default function CardStudio() {
                     <button className="btn small" onClick={() => printCard('front')}>Front only</button>
                     <button className="btn small" onClick={() => printCard('back')}>Back only</button>
                   </div>
+                  <div className="row gap" style={{ marginTop: 10 }}>
+                    <button className="btn" onClick={markPrintedNext}>
+                      {sel.cardPrinted ? '✓ Printed — reprint done, next ▶' : '✓ Mark printed & next ▶'}
+                    </button>
+                    <button className="btn ghost small" onClick={() => jumpNext(sel.id)}>Skip ▶</button>
+                    {sel.cardPrinted && <span className="tag ok">already printed</span>}
+                  </div>
                   <p className="muted small" style={{ margin: '10px 0 0' }}>
-                    One click — the Asmi flips the card and prints both sides automatically.
+                    Queue flow: card comes out → "Mark printed &amp; next" jumps to the next member automatically.
                   </p>
                 </div>
 
