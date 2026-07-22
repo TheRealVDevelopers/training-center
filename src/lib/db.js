@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
-import { SESSION } from '../config'
+import { SESSION, PACK_CREDITS, pricePerCredit, packPrice } from '../config'
 import { normalizeCode } from './readerId'
 
 // Opaque, unguessable token. Doubles as the booking document id and the QR
@@ -37,16 +37,32 @@ export async function createMemberProfile(uid, data) {
     email: data.email,
     position: data.position || '',
     clubName: data.clubName || '',
+    tier: data.tier || '', // pricing level (see config TIERS); '' → default fee
     years: data.years || '',
     city: data.city || '',
     info: data.info || '',
     photoURL: data.photoURL || '',
-    balance: 0, // money in the wallet
+    balance: 0, // money in the wallet (₹)
     reserved: 0, // money held by active (pending) bookings, not yet deducted
+    // Couples share ONE wallet: both members' walletOwnerId points at the owner.
+    // Singles own their own wallet. partnerId is the spouse (for cards/display).
+    walletOwnerId: uid,
+    partnerId: data.partnerId || null,
     memberToken: makeToken(), // permanent — powers the entry QR + NFC card
     role: 'member',
     createdAt: serverTimestamp(),
   })
+}
+
+// The member doc that actually holds the shared wallet (self, unless coupled).
+function ownerIdOf(member) {
+  return member.walletOwnerId || member.id
+}
+
+// ₹ charged for one entry (one credit), by the wallet owner's tier. Falls back
+// to the flat session fee for members with no tier assigned yet.
+function feeForOwner(owner, session) {
+  return owner.tier ? pricePerCredit(owner.tier) : (session?.feePerPerson || 0)
 }
 
 // Backfill a permanent token for members created before walk-in mode.
@@ -94,36 +110,44 @@ export async function checkInMember(memberIdValue, gate, session) {
   const member = await findMemberByAnyId(memberIdValue)
   if (!member) return { ok: false, reason: 'unknown', message: 'Card not recognised' }
 
-  const fee = session.feePerPerson || 0
-  const bookingId = `walkin_${session.id}_${member.id}`
+  // The wallet (and the "one credit per session" rule) belongs to the wallet
+  // owner — for a couple that's ONE shared doc, so either card charges once.
+  const ownerId = ownerIdOf(member)
+  const bookingId = `walkin_${session.id}_${ownerId}`
+  const credits = (bal, fee) => (fee ? Math.floor(bal / fee) : 0)
+
   return runTransaction(db, async (tx) => {
     const bRef = doc(db, 'bookings', bookingId)
-    const mRef = doc(db, 'members', member.id)
+    const oRef = doc(db, 'members', ownerId)
     const bSnap = await tx.get(bRef)
-    const mSnap = await tx.get(mRef)
-    const m = mSnap.exists() ? { id: member.id, ...mSnap.data() } : member
-    const balance = m.balance || 0
+    const oSnap = await tx.get(oRef)
+    const owner = oSnap.exists() ? { id: ownerId, ...oSnap.data() } : member
+    const fee = feeForOwner(owner, session)
+    const balance = owner.balance || 0
+    // Display uses the person who actually tapped; wallet math uses the owner.
+    const m = { ...member }
 
     if (bSnap.exists()) {
-      // Already has an entry this session. If they had tapped out, this tap
-      // brings them back in — clear the exit, don't charge again.
+      // The couple/member already entered this session. A second spouse's tap
+      // (or a re-tap) never charges again — counted as one.
       if (bSnap.data().exitedAt) {
         tx.update(bRef, { exitedAt: null, reCheckedInAt: serverTimestamp() })
-        return { ok: true, reason: 'reentry', message: 'Welcome back', member: m, sessionsLeft: fee ? Math.floor(balance / fee) : 0 }
+        return { ok: true, reason: 'reentry', message: 'Welcome back', member: m, sessionsLeft: credits(balance, fee) }
       }
-      return { ok: false, reason: 'already', message: 'Already inside', member: m, sessionsLeft: fee ? Math.floor(balance / fee) : 0 }
+      return { ok: false, reason: 'already', message: 'Already inside', member: m, sessionsLeft: credits(balance, fee) }
     }
     if (balance < fee) {
-      return { ok: false, reason: 'insufficient', message: `Low balance ₹${balance}`, member: m, sessionsLeft: 0 }
+      return { ok: false, reason: 'insufficient', message: 'No credits — recharge', member: m, sessionsLeft: 0 }
     }
 
-    tx.update(mRef, { balance: balance - fee })
+    tx.update(oRef, { balance: balance - fee })
     tx.set(bRef, {
       memberId: member.id,
-      memberName: m.name,
+      memberName: member.name,
+      ownerId,
       sessionId: session.id,
       type: 'walkin',
-      people: [{ name: m.name, isGuest: false, photoURL: m.photoURL || '' }],
+      people: [{ name: member.name, isGuest: false, photoURL: member.photoURL || '' }],
       peopleCount: 1,
       feePerPerson: fee,
       totalAmount: fee,
@@ -135,16 +159,16 @@ export async function checkInMember(memberIdValue, gate, session) {
     })
     const txnRef = doc(collection(db, 'transactions'))
     tx.set(txnRef, {
-      memberId: member.id,
+      memberId: ownerId,
       type: 'deduction',
       amount: -fee,
       bookingId,
-      note: 'Entry · walk-in',
+      note: `Entry · ${member.name}`,
       createdAt: serverTimestamp(),
     })
 
     const remaining = balance - fee
-    return { ok: true, reason: 'checked_in', message: 'Welcome', member: m, deducted: fee, remaining, sessionsLeft: fee ? Math.floor(remaining / fee) : 0 }
+    return { ok: true, reason: 'checked_in', message: 'Welcome', member: m, deducted: fee, remaining, sessionsLeft: credits(remaining, fee) }
   })
 }
 
@@ -156,7 +180,7 @@ export async function checkOutMember(memberIdValue, session) {
   const member = await findMemberByAnyId(memberIdValue)
   if (!member) return { ok: false, reason: 'unknown', message: 'Card not recognised' }
 
-  const bookingId = `walkin_${session.id}_${member.id}`
+  const bookingId = `walkin_${session.id}_${ownerIdOf(member)}`
   return runTransaction(db, async (tx) => {
     const bRef = doc(db, 'bookings', bookingId)
     const bSnap = await tx.get(bRef)
@@ -231,6 +255,74 @@ export async function addCredit(memberId, amount, note, meta = {}) {
 export function subscribeAllTopups(cb) {
   const q = query(collection(db, 'transactions'), where('type', '==', 'topup'))
   return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+}
+
+// Recharge a member in PACKS of PACK_CREDITS credits. The ₹ charged depends on
+// the wallet owner's tier. Money always lands on the shared wallet owner, so a
+// couple recharges once for both cards. Returns { credits, amount }.
+export async function rechargePacks(memberId, packs = 1, meta = {}) {
+  return runTransaction(db, async (tx) => {
+    const mRef = doc(db, 'members', memberId)
+    const mSnap = await tx.get(mRef)
+    if (!mSnap.exists()) throw new Error('Member not found')
+    const member = { id: memberId, ...mSnap.data() }
+    const ownerId = member.walletOwnerId || memberId
+    const oRef = ownerId === memberId ? mRef : doc(db, 'members', ownerId)
+    const oSnap = ownerId === memberId ? mSnap : await tx.get(oRef)
+    const owner = oSnap.exists() ? oSnap.data() : {}
+    const perPack = owner.tier ? packPrice(owner.tier) : ((meta.sessionFee || 0) * PACK_CREDITS)
+    const amount = perPack * packs
+    const addedCredits = PACK_CREDITS * packs
+    const bal = owner.balance || 0
+    tx.update(oRef, { balance: bal + amount })
+    const txnRef = doc(collection(db, 'transactions'))
+    tx.set(txnRef, {
+      memberId: ownerId,
+      type: 'topup',
+      amount, // ₹, positive
+      credits: addedCredits,
+      note: meta.note || `Recharge · ${addedCredits} credits`,
+      method: meta.method || null,
+      ref: meta.ref || null,
+      createdAt: serverTimestamp(),
+    })
+    return { credits: addedCredits, amount }
+  })
+}
+
+// Link two members as a couple: they share ONE wallet (member A becomes the
+// owner) and each shows the other as partner. B's balance is merged into A so
+// no credits are lost. Idempotent-ish: re-linking just re-points them.
+export async function linkCouple(aId, bId) {
+  if (aId === bId) throw new Error('Pick two different members')
+  await runTransaction(db, async (tx) => {
+    const aRef = doc(db, 'members', aId)
+    const bRef = doc(db, 'members', bId)
+    const aSnap = await tx.get(aRef)
+    const bSnap = await tx.get(bRef)
+    if (!aSnap.exists() || !bSnap.exists()) throw new Error('Member not found')
+    const aBal = aSnap.data().balance || 0
+    const bBal = bSnap.data().balance || 0
+    tx.update(aRef, { walletOwnerId: aId, partnerId: bId, balance: aBal + bBal })
+    tx.update(bRef, { walletOwnerId: aId, partnerId: aId, balance: 0 })
+  })
+}
+
+// Break a couple: each member goes back to owning their own (now-empty) wallet.
+export async function unlinkCouple(memberId) {
+  await runTransaction(db, async (tx) => {
+    const mRef = doc(db, 'members', memberId)
+    const mSnap = await tx.get(mRef)
+    if (!mSnap.exists()) throw new Error('Member not found')
+    const m = mSnap.data()
+    const partnerId = m.partnerId
+    tx.update(mRef, { walletOwnerId: memberId, partnerId: null })
+    if (partnerId) {
+      const pRef = doc(db, 'members', partnerId)
+      const pSnap = await tx.get(pRef)
+      if (pSnap.exists()) tx.update(pRef, { walletOwnerId: partnerId, partnerId: null })
+    }
+  })
 }
 
 // Delete a payment (top-up) and reverse its effect: the amount is subtracted

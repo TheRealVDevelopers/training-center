@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CURRENCY, SESSION, RECHARGE_CREDITS } from '../config'
+import { CURRENCY, SESSION, PACK_CREDITS, packPrice } from '../config'
 import {
   subscribeActiveSession,
   subscribeSessionBookings,
@@ -8,7 +8,7 @@ import {
   subscribeMembers,
   subscribeAllTopups,
   checkInMember,
-  addCredit,
+  rechargePacks,
   logScanEvent,
   startSession,
   endSession,
@@ -63,17 +63,15 @@ export default function GateFeed({ control = false }) {
     recent.current.set(key, now)
 
     const sess = sessionRef.current
-    const fee = sess?.feePerPerson ?? 0
-    const cr = (m) => (fee ? Math.floor((m?.balance || 0) / fee) : 0)
-    const base = (m) => ({ memberId: m?.id || '', name: m?.name || '', photoURL: m?.photoURL || '', mobile: m?.mobile || '' })
+    const base = (m) => ({ memberId: m?.id || '', name: m?.name || '', photoURL: m?.photoURL || '', mobile: m?.mobile || '', tier: m?.tier || '' })
 
     const res = await checkInMember(code, gate, sess)
     const ledOk = res.ok || res.reason === 'already'
     feedback(ledOk)
     sendReaderFeedback(gate, ledOk) // door reader LED: green in / red to desk
 
-    if (res.ok) logScanEvent({ gate, ok: true, kind: res.reason === 'reentry' ? 'reentry' : 'welcome', ...base(res.member), credits: res.sessionsLeft ?? cr(res.member) })
-    else if (res.reason === 'already') logScanEvent({ gate, ok: true, kind: 'already', ...base(res.member), credits: cr(res.member) })
+    if (res.ok) logScanEvent({ gate, ok: true, kind: res.reason === 'reentry' ? 'reentry' : 'welcome', ...base(res.member), credits: res.sessionsLeft ?? 0 })
+    else if (res.reason === 'already') logScanEvent({ gate, ok: true, kind: 'already', ...base(res.member), credits: res.sessionsLeft ?? 0 })
     else if (res.reason === 'insufficient') logScanEvent({ gate, ok: false, kind: 'low', ...base(res.member), credits: 0 })
     else if (res.reason === 'nosession') logScanEvent({ gate, ok: false, kind: 'nosession', memberId: '', name: '', photoURL: '', mobile: '', credits: 0 })
     else logScanEvent({ gate, ok: false, kind: 'notreg', memberId: '', name: '', photoURL: '', mobile: '', credits: 0 })
@@ -202,7 +200,7 @@ export default function GateFeed({ control = false }) {
             <div
               key={e.id}
               className={`gfeed-row ${e.ok ? 'ok' : low ? 'nocredit' : 'err'} ${canRecharge ? 'clickable' : ''}`}
-              onClick={canRecharge ? () => setRecharge({ memberId: e.memberId, name: e.name, mobile: e.mobile, photoURL: e.photoURL }) : undefined}
+              onClick={canRecharge ? () => setRecharge({ memberId: e.memberId, name: e.name, mobile: e.mobile, photoURL: e.photoURL, tier: e.tier }) : undefined}
             >
               <span className="gfeed-mark">{e.ok ? '✓' : '✗'}</span>
               {e.photoURL
@@ -217,7 +215,7 @@ export default function GateFeed({ control = false }) {
               </div>
               <div className="gfeed-meta">
                 {canRecharge
-                  ? <button className="gfeed-recharge" onClick={(ev) => { ev.stopPropagation(); setRecharge({ memberId: e.memberId, name: e.name, mobile: e.mobile, photoURL: e.photoURL }) }}>🎟️ Recharge</button>
+                  ? <button className="gfeed-recharge" onClick={(ev) => { ev.stopPropagation(); setRecharge({ memberId: e.memberId, name: e.name, mobile: e.mobile, photoURL: e.photoURL, tier: e.tier }) }}>🎟️ Recharge</button>
                   : <span className={`gfeed-cr ${e.ok ? '' : 'low'}`}>{e.ok ? `${e.credits ?? 0} cr` : '0 cr'}</span>}
                 <span className="gfeed-time">{fmtTime(e.at)}</span>
               </div>
@@ -229,7 +227,7 @@ export default function GateFeed({ control = false }) {
       {recharge && (
         <RechargePanel
           member={recharge}
-          fee={session?.feePerPerson ?? SESSION.feePerPerson}
+          sessionFee={session?.feePerPerson ?? SESSION.feePerPerson}
           onClose={() => setRecharge(null)}
         />
       )}
@@ -238,21 +236,23 @@ export default function GateFeed({ control = false }) {
 }
 
 // Inline recharge — the receptionist's "open profile and top up" in one step.
-// Everyone recharges in blocks of RECHARGE_CREDITS; after saving, the member
-// taps their card again and walks straight in.
-function RechargePanel({ member, fee, onClose }) {
+// Credits sell in packs of PACK_CREDITS; the ₹ price comes from the member's
+// tier. After saving, the member taps their card again and walks straight in.
+function RechargePanel({ member, sessionFee, onClose }) {
   const [method, setMethod] = useState('cash')
   const [ref, setRef] = useState('')
-  const [credits, setCredits] = useState(RECHARGE_CREDITS)
+  const [packs, setPacks] = useState(1)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState('')
-  const amount = credits * fee
+  const perPack = member.tier ? packPrice(member.tier) : sessionFee * PACK_CREDITS
+  const credits = packs * PACK_CREDITS
+  const amount = packs * perPack
 
   async function save() {
     setBusy(true)
     try {
-      await addCredit(member.memberId, amount, `Recharge · ${credits} credit${credits > 1 ? 's' : ''} · ${method}${ref ? ` · ${ref}` : ''}`, { method, ref })
-      setDone(`✓ ${credits} credits added — ask ${member.name.split(' ')[0]} to tap again.`)
+      const r = await rechargePacks(member.memberId, packs, { method, ref, sessionFee, note: `Recharge · ${credits} credits · ${method}${ref ? ` · ${ref}` : ''}` })
+      setDone(`✓ ${r.credits} credits added (${CURRENCY}${r.amount}) — ask ${member.name.split(' ')[0]} to tap again.`)
       setTimeout(onClose, 1600)
     } catch (e) {
       setDone(e.message || 'Recharge failed')
@@ -269,7 +269,7 @@ function RechargePanel({ member, fee, onClose }) {
             : <span className="avatar-fallback">{(member.name || '?')[0]}</span>}
           <div>
             <div className="recharge-name">{member.name}</div>
-            <div className="muted small">{member.mobile || 'No mobile on file'}</div>
+            <div className="muted small">{member.tier || 'No tier'}{member.mobile ? ` · ${member.mobile}` : ''}</div>
           </div>
           <button className="btn ghost small" onClick={onClose}>✕</button>
         </div>
@@ -279,9 +279,9 @@ function RechargePanel({ member, fee, onClose }) {
         ) : (
           <>
             <div className="recharge-credits">
-              {[5, 10, 20].map((c) => (
-                <button key={c} className={`amt-chip ${credits === c ? 'on' : ''}`} onClick={() => setCredits(c)}>
-                  {c} credits
+              {[1, 2, 3].map((p) => (
+                <button key={p} className={`amt-chip ${packs === p ? 'on' : ''}`} onClick={() => setPacks(p)}>
+                  {p * PACK_CREDITS} credits
                 </button>
               ))}
             </div>

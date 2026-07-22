@@ -1,27 +1,30 @@
-// Bulk member import — creates login accounts + member profiles from a CSV.
+// Bulk member import — creates login accounts + member profiles from a CSV,
+// with tier pricing and couple (shared-wallet) linking.
 //
 // Safe to re-run. For each row:
 //   • Auth: create the user if the email is new; if it already exists, reset
 //     their password to the shared one. (Passwords only — never touches money.)
 //   • Firestore members/{uid}: create the profile if missing; if it exists,
-//     fill in any provided fields WITHOUT overwriting balance, reserved,
-//     memberToken, or createdAt.
+//     fill blank fields WITHOUT overwriting balance, memberToken, or createdAt.
+//   • Couples: rows with a partnerEmail are linked into ONE shared wallet
+//     (deterministic owner), each showing the other as partner.
 //
 // Usage:
-//   npm i firebase-admin            # one-time (dev dependency)
+//   npm i firebase-admin            # one-time
 //   node scripts/import-members.mjs <serviceAccount.json> <members.csv> [password]
 //
-// CSV header (first line), columns in any order, extras ignored:
-//   name,email,mobile,clubName,position,years,city
+// CSV header (columns in any order, extras ignored):
+//   name,email,mobile,clubName,tier,years,city,partnerEmail
 //
-// Example row:
-//   Ramesh K,rameshakc@gmail.com,9945000000,Magic Club,GET,5,Bengaluru
+// tier must match a level in src/config.js TIERS (case/space-insensitive),
+// e.g. "GET TEAM", "Millionaire 4000", "Presidents Team". Blank → default.
 
 import { readFileSync } from 'fs'
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { randomUUID } from 'crypto'
+import { resolveTier } from '../src/config.js'
 
 const [, , keyPath, csvPath, passwordArg] = process.argv
 if (!keyPath || !csvPath) {
@@ -59,25 +62,27 @@ function parseCsv(text) {
 const raw = parseCsv(readFileSync(csvPath, 'utf8')).filter((r) => r.some((c) => c.trim() !== ''))
 const header = raw[0].map((h) => h.trim().toLowerCase())
 const idx = (name) => header.indexOf(name)
-const col = { name: idx('name'), email: idx('email'), mobile: idx('mobile'), clubName: idx('clubname'), position: idx('position'), years: idx('years'), city: idx('city') }
+const col = { name: idx('name'), email: idx('email'), mobile: idx('mobile'), clubName: idx('clubname'), tier: idx('tier'), years: idx('years'), city: idx('city'), partnerEmail: idx('partneremail') }
 if (col.email < 0 || col.name < 0) { console.error('CSV must have at least "name" and "email" columns.'); process.exit(1) }
 
+const get = (r, i) => (i >= 0 ? (r[i] || '').trim() : '')
 const people = raw.slice(1).map((r) => ({
-  name: (r[col.name] || '').trim(),
-  email: (r[col.email] || '').trim().toLowerCase(),
-  mobile: col.mobile >= 0 ? (r[col.mobile] || '').trim() : '',
-  clubName: col.clubName >= 0 ? (r[col.clubName] || '').trim() : '',
-  position: col.position >= 0 ? (r[col.position] || '').trim() : '',
-  years: col.years >= 0 ? (r[col.years] || '').trim() : '',
-  city: col.city >= 0 ? (r[col.city] || '').trim() : '',
+  name: get(r, col.name),
+  email: get(r, col.email).toLowerCase(),
+  mobile: get(r, col.mobile),
+  clubName: get(r, col.clubName),
+  tier: resolveTier(get(r, col.tier)),
+  years: get(r, col.years),
+  city: get(r, col.city),
+  partnerEmail: get(r, col.partnerEmail).toLowerCase(),
 })).filter((p) => p.email)
 
 console.log(`Importing ${people.length} people. Password for all: "${PASSWORD}"\n`)
 let created = 0, updated = 0, failed = 0
+const emailToUid = {}
 
 for (const p of people) {
   try {
-    // 1) Auth: create or reset password.
     let uid
     try {
       const u = await auth.getUserByEmail(p.email)
@@ -91,17 +96,17 @@ for (const p of people) {
         process.stdout.write(`+ create ${p.email}`)
       } else throw e
     }
+    emailToUid[p.email] = uid
 
-    // 2) Firestore profile: create if missing; else fill provided fields only,
-    //    never overwriting money / token / createdAt.
     const ref = db.collection('members').doc(uid)
     const snap = await ref.get()
     if (!snap.exists) {
       await ref.set({
         name: p.name, mobile: p.mobile, email: p.email,
-        position: p.position, clubName: p.clubName, years: p.years, city: p.city,
-        info: '', photoURL: '',
+        position: '', clubName: p.clubName, tier: p.tier,
+        years: p.years, city: p.city, info: '', photoURL: '',
         balance: 0, reserved: 0,
+        walletOwnerId: uid, partnerId: null,
         memberToken: randomUUID().replace(/-/g, ''),
         role: 'member',
         createdAt: FieldValue.serverTimestamp(),
@@ -110,10 +115,11 @@ for (const p of people) {
     } else {
       const cur = snap.data()
       const patch = {}
-      for (const k of ['name', 'mobile', 'position', 'clubName', 'years', 'city']) {
-        if (p[k] && !cur[k]) patch[k] = p[k] // only fill blanks; don't clobber
+      for (const k of ['name', 'mobile', 'clubName', 'tier', 'years', 'city']) {
+        if (p[k] && !cur[k]) patch[k] = p[k] // fill blanks only; never clobber
       }
       if (!cur.memberToken) patch.memberToken = randomUUID().replace(/-/g, '')
+      if (!cur.walletOwnerId) patch.walletOwnerId = uid
       if (Object.keys(patch).length) await ref.update(patch)
       updated++; console.log('  → profile ' + (Object.keys(patch).length ? 'updated' : 'ok'))
     }
@@ -122,5 +128,33 @@ for (const p of people) {
   }
 }
 
-console.log(`\nDone. profiles created: ${created}, existing updated/ok: ${updated}, failed: ${failed}`)
+// ---- Couples: link partners into one shared wallet ------------------------
+console.log('\nLinking couples…')
+let couples = 0
+const seen = new Set()
+for (const p of people) {
+  if (!p.partnerEmail) continue
+  const aUid = emailToUid[p.email]
+  const bUid = emailToUid[p.partnerEmail]
+  if (!aUid || !bUid || aUid === bUid) { console.log(`  ! skip couple ${p.email} ↔ ${p.partnerEmail} (missing account)`); continue }
+  const key = [p.email, p.partnerEmail].sort().join('|')
+  if (seen.has(key)) continue
+  seen.add(key)
+  // Deterministic owner: the alphabetically-smaller email holds the wallet.
+  const [ownerUid, otherUid] = p.email < p.partnerEmail ? [aUid, bUid] : [bUid, aUid]
+  try {
+    const oRef = db.collection('members').doc(ownerUid)
+    const xRef = db.collection('members').doc(otherUid)
+    const [oSnap, xSnap] = await Promise.all([oRef.get(), xRef.get()])
+    const oBal = oSnap.data()?.balance || 0
+    const xBal = xSnap.data()?.balance || 0
+    await oRef.update({ walletOwnerId: ownerUid, partnerId: otherUid, balance: oBal + xBal })
+    await xRef.update({ walletOwnerId: ownerUid, partnerId: ownerUid, balance: 0 })
+    couples++; console.log(`  ♥ linked ${p.email} ↔ ${p.partnerEmail}`)
+  } catch (e) {
+    console.log(`  ! couple failed ${key}: ${e.message}`)
+  }
+}
+
+console.log(`\nDone. profiles created: ${created}, existing updated/ok: ${updated}, couples linked: ${couples}, failed: ${failed}`)
 process.exit(0)
