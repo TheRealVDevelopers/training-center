@@ -62,7 +62,7 @@ function parseCsv(text) {
 const raw = parseCsv(readFileSync(csvPath, 'utf8')).filter((r) => r.some((c) => c.trim() !== ''))
 const header = raw[0].map((h) => h.trim().toLowerCase())
 const idx = (name) => header.indexOf(name)
-const col = { name: idx('name'), email: idx('email'), mobile: idx('mobile'), clubName: idx('clubname'), tier: idx('tier'), years: idx('years'), city: idx('city'), partnerEmail: idx('partneremail') }
+const col = { name: idx('name'), email: idx('email'), mobile: idx('mobile'), clubName: idx('clubname'), tier: idx('tier'), years: idx('years'), city: idx('city'), partnerEmail: idx('partneremail'), couple: idx('couple') }
 if (col.email < 0 || col.name < 0) { console.error('CSV must have at least "name" and "email" columns.'); process.exit(1) }
 
 const get = (r, i) => (i >= 0 ? (r[i] || '').trim() : '')
@@ -75,6 +75,7 @@ const people = raw.slice(1).map((r) => ({
   years: get(r, col.years),
   city: get(r, col.city),
   partnerEmail: get(r, col.partnerEmail).toLowerCase(),
+  couple: /^(y|yes|true|1|couple)$/i.test(get(r, col.couple)),
 })).filter((p) => p.email)
 
 console.log(`Importing ${people.length} people. Password for all: "${PASSWORD}"\n`)
@@ -107,6 +108,7 @@ for (const p of people) {
         years: p.years, city: p.city, info: '', photoURL: '',
         balance: 0, reserved: 0,
         walletOwnerId: uid, partnerId: null,
+        couple: p.couple, cardPrinted: false, cardGiven: false,
         memberToken: randomUUID().replace(/-/g, ''),
         role: 'member',
         createdAt: FieldValue.serverTimestamp(),
@@ -120,6 +122,7 @@ for (const p of people) {
       }
       if (!cur.memberToken) patch.memberToken = randomUUID().replace(/-/g, '')
       if (!cur.walletOwnerId) patch.walletOwnerId = uid
+      if (p.couple && !cur.couple) patch.couple = true // explicit couple flag
       if (Object.keys(patch).length) await ref.update(patch)
       updated++; console.log('  → profile ' + (Object.keys(patch).length ? 'updated' : 'ok'))
     }
