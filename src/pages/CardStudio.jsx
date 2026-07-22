@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { subscribeMembers, updateMemberProfile, ensureMemberToken } from '../lib/db'
@@ -75,6 +75,54 @@ export default function CardStudio() {
       jumpNext(sel.id)
     } catch (e) { setMsg(e.message) }
   }
+  function togglePrinted(m) {
+    updateMemberProfile(m.id, { cardPrinted: !m.cardPrinted }).catch(() => {})
+  }
+
+  // ---- BATCH: one click prints every unprinted card, hands-free ------------
+  // Chrome on the station PC runs with --kiosk-printing, so each print goes
+  // straight to the Evolis with no dialog; 'afterprint' fires when the job is
+  // spooled -> mark printed -> select the next member -> print again.
+  const [batch, setBatch] = useState(null) // { ids, i } | null
+  const batchRef = useRef(null)
+
+  function startBatch() {
+    const ids = unprinted.map((m) => m.id)
+    if (!ids.length) return
+    if (!window.confirm(`Print ALL ${ids.length} unprinted cards now?\n\nMake sure the printer has enough blank cards and ribbon, and Chrome runs with --kiosk-printing (no dialogs).`)) return
+    setPrintSide('both')
+    const b = { ids, i: 0 }
+    batchRef.current = b
+    setBatch(b)
+    setSelected(ids[0])
+    setTimeout(() => window.print(), 700) // let the first card render
+  }
+  function stopBatch() {
+    batchRef.current = null
+    setBatch(null)
+    setMsg('⏹ Batch stopped — already-sent cards keep printing from the Windows queue.')
+  }
+  useEffect(() => {
+    function onAfterPrint() {
+      const b = batchRef.current
+      if (!b) return
+      updateMemberProfile(b.ids[b.i], { cardPrinted: true }).catch(() => {})
+      const next = b.i + 1
+      if (next >= b.ids.length) {
+        batchRef.current = null
+        setBatch(null)
+        setMsg(`🎉 Batch done — ${b.ids.length} cards sent to the printer.`)
+        return
+      }
+      const nb = { ids: b.ids, i: next }
+      batchRef.current = nb
+      setBatch(nb)
+      setSelected(nb.ids[next])
+      setTimeout(() => window.print(), 1000) // render + let the spooler breathe
+    }
+    window.addEventListener('afterprint', onAfterPrint)
+    return () => window.removeEventListener('afterprint', onAfterPrint)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="page wide cardstudio">
@@ -85,10 +133,21 @@ export default function CardStudio() {
             <div className="muted small">Select member → design picks itself → print</div>
           </div>
           <div className="row gap">
-            <span className="live-pill">{unprinted.length} card{unprinted.length === 1 ? '' : 's'} to print</span>
-            <button className="btn ghost small" onClick={() => jumpNext(null)} disabled={!unprinted.length}>▶ Next unprinted</button>
-            <Link className="btn ghost small" to="/admin/testcard">🎨 Test prints</Link>
-            <Link className="btn ghost small" to="/admin">‹ Reception</Link>
+            {batch ? (
+              <>
+                <span className="live-pill"><span className="live-dot" />Printing {batch.i + 1} of {batch.ids.length} — {members.find((m) => m.id === batch.ids[batch.i])?.name || ''}</span>
+                <button className="btn danger small" onClick={stopBatch}>⏹ Stop</button>
+              </>
+            ) : (
+              <>
+                <button className="btn primary small" onClick={startBatch} disabled={!unprinted.length}>
+                  🖨 Print ALL unprinted ({unprinted.length})
+                </button>
+                <button className="btn ghost small" onClick={() => jumpNext(null)} disabled={!unprinted.length}>▶ Next</button>
+                <Link className="btn ghost small" to="/admin/testcard">🎨 Test prints</Link>
+                <Link className="btn ghost small" to="/admin">‹ Reception</Link>
+              </>
+            )}
           </div>
         </header>
 
@@ -96,15 +155,25 @@ export default function CardStudio() {
           <div className="card cs-left">
             <label>Search member</label>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name or mobile…" />
+            <p className="muted small" style={{ margin: '8px 0 0' }}>
+              Tick ✓ on everyone who already has a card — then "Print ALL unprinted" runs the rest by itself.
+            </p>
             <div className="memberlist">
               {filtered.map((m) => (
-                <button key={m.id} className={`memberrow ${selected === m.id ? 'sel' : ''}`} onClick={() => setSelected(m.id)}>
-                  <span>
+                <div key={m.id} className={`memberrow csrow ${selected === m.id ? 'sel' : ''}`}>
+                  <button className="csrow-main" onClick={() => setSelected(m.id)}>
                     {m.photoURL ? <img className="avatar xs" src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
                     <span className="mname">{m.name}</span>
-                  </span>
-                  <span className="muted small">{m.cardPrinted ? '✓ ' : ''}{tierByKey(detectTier(m)).label}</span>
-                </button>
+                    <span className="muted small">{tierByKey(detectTier(m)).label}</span>
+                  </button>
+                  <button
+                    className={`cs-ptoggle ${m.cardPrinted ? 'on' : ''}`}
+                    title={m.cardPrinted ? 'Card printed — click to unmark' : 'Mark as already printed'}
+                    onClick={() => togglePrinted(m)}
+                  >
+                    {m.cardPrinted ? '✓' : '○'}
+                  </button>
+                </div>
               ))}
               {filtered.length === 0 && <div className="muted small">No members match.</div>}
             </div>

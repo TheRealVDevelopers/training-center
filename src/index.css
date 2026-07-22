@@ -1022,3 +1022,10 @@ label.inline select { margin: 0; }
   .poster { width: 210mm; height: 297mm; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
   .poster-page ~ *, body { background: #fff !important; }
 }
+
+/* ---- Card Studio queue rows ---- */
+.memberrow.csrow { display: flex; align-items: stretch; gap: 6px; padding: 0; overflow: hidden; }
+.csrow-main { flex: 1; display: flex; align-items: center; gap: 9px; padding: 12px 14px; background: none; border: none; color: inherit; font: inherit; cursor: pointer; text-align: left; min-width: 0; }
+.csrow-main .mname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-ptoggle { width: 44px; flex: none; border: none; border-left: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 16px; font-weight: 800; cursor: pointer; }
+.cs-ptoggle.on { background: rgba(53, 224, 138, 0.16); color: var(--ok); }
