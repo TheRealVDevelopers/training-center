@@ -68,6 +68,10 @@ export default function CardStudio() {
 
   const membersRef = useRef([])
   useEffect(() => { membersRef.current = members }, [members])
+  const selectedRef = useRef(null)
+  useEffect(() => { selectedRef.current = selected }, [selected])
+  const printSideRef = useRef('front')
+  useEffect(() => { printSideRef.current = printSide }, [printSide])
 
   const unprinted = useMemo(
     () => members.filter((m) => remainingOf(m) > 0).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
@@ -85,15 +89,6 @@ export default function CardStudio() {
     const next = unprinted.find((m) => m.id !== excludeId)
     if (next) setSelected(next.id)
     else setMsg('🎉 All cards printed!')
-  }
-  async function markPrintedNext() {
-    if (!sel) return
-    try {
-      await bumpPrinted(sel.id)
-      const stillLeft = remainingOf(sel) - 1 > 0 // this copy just printed
-      if (stillLeft) setMsg(`✓ Copy ${printedOf(sel) + 1} of ${neededOf(sel)} — print the second card for this couple`)
-      else jumpNext(sel.id)
-    } catch (e) { setMsg(e.message) }
   }
   function togglePrinted(m) {
     const needed = neededOf(m)
@@ -150,7 +145,13 @@ export default function CardStudio() {
   useEffect(() => {
     function onAfterPrint() {
       const b = batchRef.current
-      if (!b) return
+      if (!b) {
+        // Manual print: a full-card print (front+back) auto-marks ✓ printed.
+        if (printSideRef.current === 'both' && selectedRef.current) {
+          bumpPrinted(selectedRef.current).catch(() => {})
+        }
+        return
+      }
       bumpPrinted(b.ids[b.i]).catch(() => {})
       const next = b.i + 1
       if (next >= b.ids.length) {
@@ -254,14 +255,13 @@ export default function CardStudio() {
                     <button className="btn small" onClick={() => printCard('back')}>Back only</button>
                   </div>
                   <div className="row gap" style={{ marginTop: 10 }}>
-                    <button className="btn" onClick={markPrintedNext}>
-                      {sel.cardPrinted ? '✓ Printed — reprint done, next ▶' : '✓ Mark printed & next ▶'}
-                    </button>
-                    <button className="btn ghost small" onClick={() => jumpNext(sel.id)}>Skip ▶</button>
-                    {sel.cardPrinted && <span className="tag ok">already printed</span>}
+                    <button className="btn" onClick={() => jumpNext(sel.id)}>Next unprinted ▶</button>
+                    <span className={`tag ${printedOf(sel) >= neededOf(sel) ? 'ok' : 'muted'}`}>
+                      printed {printedOf(sel)}/{neededOf(sel)}{sel.couple ? ' 👫' : ''}
+                    </span>
                   </div>
                   <p className="muted small" style={{ margin: '10px 0 0' }}>
-                    Queue flow: card comes out → "Mark printed &amp; next" jumps to the next member automatically.
+                    Printing a card marks it ✓ printed automatically (couples count 2). Front-only / back-only reprints don't count.
                   </p>
                 </div>
 
@@ -335,9 +335,10 @@ function CardFace({ member, tier, side, print }) {
   const img = side === 'front' ? tier.frontImage : tier.backImage
   const ac = tier.printAccent
   // The YMCKO ribbon has NO white — "white" is bare card showing through and
-  // reads as a shiny gap. So everything on the colored zone prints in the
-  // tier's LIGHT accent instead: real ink, real contrast.
-  const lite = tier.accent || '#f0e2b6'
+  // reads as a shiny gap. Light tints barely lay ink either. So everything on
+  // the colored zone prints in WARM GOLD (same family as the chip): solid ink,
+  // readable on every tier color including the black President's card.
+  const lite = '#e8c964'
 
   const grad = `linear-gradient(135deg, ${ac} 0%, ${tier.bgDark || ac} 100%)`
 
