@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
-import { createMemberProfile, uploadPhoto } from '../lib/db'
+import { createMemberProfile, uploadPhoto, updateMemberProfile, getMember } from '../lib/db'
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -23,18 +23,48 @@ export default function Signup() {
     setPreview(f ? URL.createObjectURL(f) : '')
   }
 
+  // Upload the photo AFTER the profile exists, best-effort — a Storage hiccup
+  // must never block registration or leave an account without a profile.
+  async function attachPhoto(uid) {
+    if (!photo) return
+    try {
+      const photoURL = await uploadPhoto(`members/${uid}/profile.jpg`, photo)
+      await updateMemberProfile(uid, { photoURL })
+    } catch {
+      /* photo is optional — ignore and keep the account */
+    }
+  }
+
   async function submit(e) {
     e.preventDefault()
     setErr('')
     setBusy(true)
+    const email = form.email.trim()
     try {
-      const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password)
-      let photoURL = ''
-      if (photo) photoURL = await uploadPhoto(`members/${cred.user.uid}/profile.jpg`, photo)
-      await createMemberProfile(cred.user.uid, { ...form, email: form.email.trim(), photoURL })
+      const cred = await createUserWithEmailAndPassword(auth, email, form.password)
+      // Profile FIRST so the account can never be orphaned; photo is best-effort.
+      await createMemberProfile(cred.user.uid, { ...form, email, photoURL: '' })
+      await attachPhoto(cred.user.uid)
       nav('/')
     } catch (e) {
-      setErr(e.message)
+      // Recover an orphaned account: the email exists but signup failed before
+      // the profile was written. If the password matches, sign in and finish.
+      if (e.code === 'auth/email-already-in-use') {
+        try {
+          const cred = await signInWithEmailAndPassword(auth, email, form.password)
+          const existing = await getMember(cred.user.uid)
+          if (!existing) {
+            await createMemberProfile(cred.user.uid, { ...form, email, photoURL: '' })
+            await attachPhoto(cred.user.uid)
+          }
+          nav('/')
+          return
+        } catch {
+          setErr('This email is already registered. Please log in instead.')
+        }
+      } else {
+        setErr(e.message)
+      }
       setBusy(false)
     }
   }
