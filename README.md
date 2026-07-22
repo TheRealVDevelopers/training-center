@@ -1,101 +1,70 @@
-# Saturday Training — Registration (V1 prototype)
+# Saturday Training — Tap. Green. In.
 
-React + Firebase prototype. Members create an account, book a slot (for self,
-self+guest, or guest-only), and get a QR. At the door, volunteers open a
-scanner-only page on their phones, scan the QR, and the member is checked in —
-the fee is deducted **at scan**, and a live counter updates on the admin
-dashboard in real time. No physical scanners needed: the phone camera is the
-scanner.
+React + Firebase walk-in system for a Herbalife nutrition club. Every member
+carries one permanent pass (NFC tap card and/or phone QR). On Saturday they
+just walk in and tap: **green** = entered (−1 credit), **red** = no credits →
+recharge at the desk, tap again, in.
 
-## What's in it
-- **Member**: signup (name, mobile, email, password, photo) → dashboard with
-  balance + 3 booking buttons → QR per booking (cancellable until scanned) →
-  history.
-- **Scanner** (`/scan?gate=1`): open page, phone camera, tick + name + people
-  count, auto-resumes. Open it on as many phones/gates as you want.
-- **Admin** (`/admin`): registered members, live attendees, remaining seats, and
-  a real-time entry feed with faces. `/admin/credits` adds balance (with payment
-  method + reference captured).
+## The three surfaces
 
-## Correctness notes (already built in)
-- **No double check-in.** Check-in is a Firestore transaction; only the first
-  scan of a booking wins. A second scan at any gate shows "Already entered" and
-  never deducts twice — so the live count stays right across multiple phones.
-- **QR = a random booking token**, not a member id, so codes aren't guessable.
-- **Money is a ledger.** Every top-up and deduction is a row in `transactions`;
-  balance changes never happen silently.
+| URL | Who | What |
+|---|---|---|
+| `/admin` | Receptionist (staff PIN, typed once per device) | THE staff screen: live tap feed with instant green/red, one-tap **Recharge** on red rows, **+ Guest** on green rows, In/Out switch, Find-member (check-in · recharge · assign first card). Session auto-starts on the first tap. |
+| `/owner` | Owner (email login) | One page, four tabs — **Today** (live numbers, who entered, past Saturdays, staff PIN), **People** (level = price + card design, couple ×2, credits, card printed/given, add member without email, replace card, password reset), **Money** (every payment by day, cash vs UPI, delete-a-mistake), **Print** (Card Studio + printer test). |
+| `/` | Member | Their card: credits left, **Show my pass** (QR), history. `/profile` for photo/details/password. |
 
-## Setup (one time)
+Public: `/door` shows a big QR → `/feed`, a watch-only live board for anyone
+at the door. No code, no buttons, no money shown.
 
-1. **Create a Firebase project** at https://console.firebase.google.com
-2. In the project, enable:
-   - **Authentication** → Sign-in method → **Email/Password** → Enable
-   - **Firestore Database** → Create database (start in test mode is fine for the prototype)
-   - **Storage** → Get started (for member/guest photos)
-3. **Add a Web app** (Project settings → General → Your apps → `</>`). Copy the
-   config values.
-4. In this folder, copy `.env.example` to `.env` and paste the values:
-   ```
-   VITE_FIREBASE_API_KEY=...
-   VITE_FIREBASE_AUTH_DOMAIN=...
-   VITE_FIREBASE_PROJECT_ID=...
-   VITE_FIREBASE_STORAGE_BUCKET=...
-   VITE_FIREBASE_MESSAGING_SENDER_ID=...
-   VITE_FIREBASE_APP_ID=...
-   ```
-5. (Optional) Paste `firestore.rules` into Firestore → Rules. They're wide-open
-   for the prototype — see the warning in that file before any real launch.
-6. Set the admin email in `src/config.js` (`ADMIN_EMAILS`) — currently your
-   email. Also tune `feePerPerson` and `capacity` there.
+## The money model — credits
 
-## Run
+- Wallet holds **whole credits**. 1 credit = 1 entry, for everyone.
+- Credits sell **only in packs of 5**; the ₹ price of a pack comes from the
+  member's level (`src/config.js` → `TIERS`): ₹300 (Associate/Supervisor/World
+  Team), ₹1000 (GET), ₹1500 (Millionaire), ₹2000 (Presidents Team).
+- Every recharge / entry / correction is an append-only row in `transactions`.
+- **Couple** = one account flagged ×2 → two printed cards, same wallet; both
+  spouses enter on the session's single entry (never charged twice).
+- One entry doc per member per session (`entries/{sessionId_memberId}`) makes
+  double-charging impossible from any device.
 
-```bash
-npm install
-npm run dev
-```
+## Why taps feel instant
 
-- Open `http://localhost:5173` on your laptop → sign up → that account, if its
-  email is in `ADMIN_EMAILS`, can open `/admin` and press **Start session**.
-- Add balance to a member from **Admin → Credits**.
-- Book a slot as a member to get a QR.
+The reception device keeps a live copy of the member list. A tap's verdict
+(green/red) is decided **locally in ~150 ms** — light, sound, row on the board
+— while the cloud transaction confirms in the background. Offline, entries
+queue and sync when wifi returns; money actions always wait for the network.
 
-### Testing the multi-phone door
-The dev server runs with `--host`, so phones on the **same wifi** can open the
-scanner. Find your laptop's LAN IP (`ipconfig` on Windows) and on each phone open:
-```
-http://<laptop-ip>:5173/scan?gate=1   (gate=2, 3, 4 on the others)
-```
-> 📷 Phone cameras need a **secure context**. `localhost` works on the laptop,
-> but phones hitting `http://<ip>` may block the camera. Easiest fix for a demo:
-> run it through a tunnel (e.g. `npx cloudflared tunnel --url http://localhost:5173`)
-> and open the HTTPS URL on the phones. For real deployment, host it on any
-> HTTPS host (Firebase Hosting, Vercel, Netlify — all free tier).
+## Hardware
 
-## Deploy to HTTPS (so real phones can scan)
+Readers all feed the reception screen: USB PC/SC readers via the local bridge
+(`card-bridge/`), keyboard-wedge QR guns (hidden always-focused catcher), and
+phone QR passes. Card printing: Card Studio (`/admin/print`) on an Evolis-type
+CR80 printer; run Chrome with `--kiosk-printing` to skip dialogs.
 
-The phone-camera scanner needs HTTPS. Firebase Hosting gives you a free HTTPS URL
-and is already configured (`firebase.json`):
+## Setup
 
-```bash
-npm install -g firebase-tools   # once
-firebase login                  # once
-firebase use --add              # pick your Firebase project
-npm run build
-firebase deploy                 # deploys hosting + firestore.rules
-```
+1. Firebase project with **Auth** (Email/Password **and Anonymous**),
+   **Firestore**, **Storage**, **Hosting**.
+2. `.env` from `.env.example` (`VITE_FIREBASE_*`).
+3. Owner email in `src/config.js` (`SUPER_ADMIN_EMAILS`) **and** in
+   `firestore.rules` (`isOwner()`).
+4. `npm install && npm run dev` · deploy with
+   `npm run build && firebase deploy`.
+5. Set the staff PIN from Owner → Today.
 
-You'll get a URL like `https://<project>.web.app`. Open `…/scan?gate=1` (gate=2,
-3, 4) on each volunteer's phone and the camera will work — no tunnel needed.
+## Ops scripts (need a service-account key)
 
-## Notes / known prototype shortcuts
-- Funds are **held at booking** and **deducted at check-in** (released if you
-  cancel), so a member can't book more slots than their available balance covers.
-  Member dashboard shows "available to book" = wallet balance − held.
-- `/scan` is unauthenticated for volunteer convenience — fine for a prototype,
-  must be gated before production (see `firestore.rules`).
-- One active session at a time (`status: 'active'`). "Start session" creates it.
+- `scripts/backup.mjs <key>` — full Firestore + auth export to `backups/`.
+- `scripts/import-members.mjs <key> <csv> [password]` — bulk create/reset
+  members (columns: name,email,mobile,clubName,tier,city,couple).
+- `scripts/migrate-credits.mjs <key>` — the one-time ₹→credits cutover
+  (already run in production).
 
-> ⚠️ This folder is under OneDrive. `node_modules` is gitignored, but OneDrive
-> may still try to sync it and slow things down — consider pausing OneDrive sync
-> while developing, or moving the project outside the OneDrive folder.
+## Security model (honest)
+
+No unauthenticated access; members read only their own data and can never
+raise credits; ledger deletes are owner-only. Staff devices authenticate
+anonymously behind the PIN gate — the PIN is a UX gate, not cryptography; a
+determined technical person with the SDK could act as staff. If the club ever
+needs bank-grade guarantees, move check-in/recharge into Cloud Functions.

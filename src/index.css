@@ -732,6 +732,31 @@ a:hover { text-decoration: underline; }
 .gfm-link { flex: none; font-weight: 800; font-size: 13px; color: var(--brand-ink); text-decoration: none; padding: 0 6px; }
 .gfm-link:hover { text-decoration: underline; }
 
+/* ---- Rebuild: reception & owner ---- */
+.seg.inout button.on.out { background: var(--danger); color: #fff; }
+.gfeed .seg { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16); }
+.gfeed .seg button { color: #d8e4dc; }
+.gfeed-guest {
+  display: inline-block; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; padding: 8px 14px;
+  cursor: pointer; font-family: inherit; font-weight: 800; font-size: 12.5px; color: #fff; background: rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+.gfeed-guest:hover { background: rgba(255, 255, 255, 0.22); }
+.gfeed-guest:disabled { opacity: 0.5; }
+
+.ownertabs { display: flex; width: 100%; margin: 4px 0 16px; }
+.ownertabs button { flex: 1; padding: 13px 10px; font-size: 15px; }
+
+.memberrow.stack { display: block; padding: 0; cursor: default; }
+.prow-main { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px 14px; background: none; border: none; font: inherit; color: inherit; cursor: pointer; font-weight: 700; }
+.prow-main span { display: inline-flex; align-items: center; gap: 9px; }
+.prow-detail { padding: 4px 14px 14px; border-top: 1px dashed var(--line); }
+.row.wrap { flex-wrap: wrap; }
+label.inline { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: 700; font-size: 13.5px; }
+label.inline select { margin: 0; }
+
+.big-cta { font-size: 18px; padding: 18px; margin: 14px 0 4px; }
+
 /* ---- Card tracking ---- */
 .cardtrack-list { display: grid; gap: 8px; margin-top: 12px; }
 .cardtrack-row { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; flex-wrap: wrap; }

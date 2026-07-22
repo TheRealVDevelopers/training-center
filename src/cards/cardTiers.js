@@ -97,16 +97,22 @@ export function tierByKey(key) {
   return CARD_TIERS.find((t) => t.key === key) || CARD_TIERS[CARD_TIERS.length - 1]
 }
 
-// Level comes from the explicit member.level (set in the Card Studio) or is
-// guessed from the free-text position they typed at signup.
+// The card design follows the member's ONE level field (`tier` — the same one
+// that sets their price). A Card Studio override (`level`) wins if set.
+const TIER_TO_KEY = {
+  'Associate': 'associate',
+  'Supervisor': 'supervisor',
+  'World Team': 'world',
+  'GET TEAM': 'get',
+  'GET 2500': 'get2500',
+  'Millionaire 4000': 'millionaire',
+  'Millionaire 7500': 'mill7500',
+  'Presidents Team': 'president',
+}
 export function detectTier(member) {
   if (member?.level) {
     const t = CARD_TIERS.find((x) => x.key === member.level)
     if (t) return t.key
   }
-  const s = `${member?.position || ''}`.toLowerCase()
-  for (const t of CARD_TIERS) {
-    if (t.match.some((k) => new RegExp(`\\b${k}`, 'i').test(s))) return t.key
-  }
-  return 'associate'
+  return TIER_TO_KEY[member?.tier] || 'associate'
 }

@@ -6,3 +6,4 @@ dist
 .DS_Store
 .firebase/
 card-bridge/*.dll
+backups/

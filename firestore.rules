@@ -1,15 +1,78 @@
 rules_version = '2';
 
-// ⚠️ PROTOTYPE RULES — permissive on purpose so the open /scan page (no login)
-// can read bookings and run check-in writes. Do NOT ship this to production.
-// Before any real launch, lock these down: members read/write only their own
-// doc, bookings created only by the owner, balance/transactions writes moved
-// behind a Cloud Function or admin-only check, and /scan put behind a volunteer
-// login or a signed token.
+// Locked for the credits-model rebuild.
+//   OWNER  — password login with the owner email: full control.
+//   STAFF  — reception/feed devices sign in ANONYMOUSLY behind the PIN gate.
+//   MEMBER — password login: sees their own data, can never touch credits.
+//
+// Honest note on scope: the 4-digit PIN is a UX gate, not cryptography — a
+// technical person could sign in anonymously with the SDK and act as staff.
+// What these rules DO guarantee: zero unauthenticated access, members can't
+// read each other or raise their own credits, and the ledger is append-only
+// (deletes are owner-only). The full fix remains Cloud Functions if the club
+// ever needs bank-grade guarantees.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    function signedIn() { return request.auth != null; }
+    function isOwner() {
+      return signedIn() && request.auth.token.email in ['runfast060425@gmail.com'];
     }
+    function isStaff() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function staffOrOwner() { return isStaff() || isOwner(); }
+
+    match /members/{memberId} {
+      allow get: if staffOrOwner() || (signedIn() && request.auth.uid == memberId);
+      allow list: if staffOrOwner();
+      // Signup creates ONLY your own profile, always with zero credits.
+      allow create: if (signedIn() && request.auth.uid == memberId
+                        && request.resource.data.credits == 0)
+                    || staffOrOwner();
+      // Members may edit their own contact details — never money or identity.
+      allow update: if (signedIn() && request.auth.uid == memberId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'mobile', 'clubName', 'city', 'years', 'photoURL', 'memberToken']))
+        || staffOrOwner();
+      allow delete: if isOwner();
+    }
+
+    match /entries/{entryId} {
+      allow read: if signedIn();
+      allow create, update: if staffOrOwner();
+      allow delete: if isOwner();
+    }
+
+    match /transactions/{txnId} {
+      allow get, list: if staffOrOwner()
+        || (signedIn() && resource.data.memberId == request.auth.uid);
+      allow create: if staffOrOwner();
+      allow update: if false;          // history is never edited
+      allow delete: if isOwner();      // delete-a-mistake, owner only
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if signedIn();
+      allow create, update: if staffOrOwner();
+      allow delete: if isOwner();
+    }
+
+    match /scanEvents/{eventId} {
+      allow read: if signedIn();       // the live board feed
+      allow create: if staffOrOwner();
+      allow update, delete: if isOwner();
+    }
+
+    match /settings/{docId} {
+      allow read: if staffOrOwner();
+      allow write: if isOwner();
+    }
+
+    // Legacy booking-era data: owner can still read history; nothing writes.
+    match /bookings/{id} { allow read: if staffOrOwner(); allow write: if false; }
+
+    match /{document=**} { allow read, write: if false; }
   }
 }
