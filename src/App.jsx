@@ -11,6 +11,7 @@ import Owner from './pages/Owner'
 import Door from './pages/Door'
 import CardStudio from './pages/CardStudio'
 import TestCard from './pages/TestCard'
+import Poster from './pages/Poster'
 
 export default function App() {
   const { loading } = useAuth()
@@ -35,6 +36,7 @@ export default function App() {
       {/* Public: the door QR screen and the watch-only live board it opens */}
       <Route path="/door" element={<Door />} />
       <Route path="/feed" element={<Reception viewOnly />} />
+      <Route path="/poster" element={<Poster />} />
 
       {/* Old links keep working */}
       <Route path="/super" element={<Navigate to="/owner" replace />} />

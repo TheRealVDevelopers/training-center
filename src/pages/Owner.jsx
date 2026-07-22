@@ -450,6 +450,7 @@ function PrintTab({ members }) {
           <Link className="btn big" to="/admin/testcard" target="_blank">Printer test page ›</Link>
           <Link className="btn big" to="/door" target="_blank">Door QR screen ›</Link>
           <Link className="btn big" to="/signup" target="_blank">Signup page (share) ›</Link>
+          <Link className="btn big" to="/poster" target="_blank">Signup poster (print / WhatsApp) ›</Link>
         </div>
       </div>
     </>
