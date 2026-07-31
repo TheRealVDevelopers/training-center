@@ -1166,3 +1166,30 @@ label.inline select { width: auto; padding: 9px 12px; }
   background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0; text-align: left; }
 a.hist-row { text-decoration: none; color: inherit; }
 a.hist-row:hover { text-decoration: none; background: var(--surface-2); }
+
+/* ---- Assign-cards panel (tap card → who is it?) ---- */
+.assignp { max-width: 480px; }
+.ctk-chip.assign { cursor: default; }
+.asg-wait { text-align: center; padding: 26px 10px; }
+.asg-pulse { font-size: 54px; animation: asgpulse 1.6s ease-in-out infinite; }
+@keyframes asgpulse { 0%,100% { opacity: .45; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+.asg-wait-t { font-family: var(--font-display); font-weight: 800; font-size: 19px; margin-top: 8px; }
+.asg-uid { text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 12px;
+  letter-spacing: 0.18em; color: var(--brand-ink); background: rgba(0, 224, 122, 0.1);
+  border: 1px solid rgba(0, 224, 122, 0.3); border-radius: 999px; padding: 6px 12px; width: fit-content; margin: 0 auto 12px; }
+.asg-known { text-align: center; padding: 6px 0 4px; }
+.asg-face { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; }
+.asg-face.fb { display: grid; place-items: center; background: var(--grad-tile); color: #06210f;
+  font-family: var(--font-display); font-weight: 800; font-size: 34px; }
+.asg-name { font-family: var(--font-display); font-weight: 800; font-size: 22px; margin-top: 10px; color: var(--ok); }
+.asg-q { text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 18px; margin-bottom: 10px; }
+.asg-matches { display: grid; gap: 6px; margin-top: 10px; }
+.asg-match { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; cursor: pointer;
+  background: var(--surface-2); border: 1.5px solid transparent; border-radius: var(--r-sm); color: var(--ink);
+  font: inherit; text-align: left; }
+.asg-match:hover { border-color: var(--brand); background: var(--surface-3); }
+.asg-match img, .asg-match .avatar-fallback { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex: none; }
+.asg-match-name { flex: 1; font-weight: 800; min-width: 0; }
+.asg-go { font-size: 12px; font-weight: 800; color: var(--brand-ink); white-space: nowrap; }
+.asg-log { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); max-height: 130px; overflow-y: auto; }
+.asg-log-row { font-size: 13px; padding: 3px 0; }

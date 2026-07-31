@@ -112,9 +112,35 @@ export async function ensureMemberToken(member) {
   return token
 }
 
-// Link a physical card to a member. Replacing later kills the old card.
-export async function assignCard(memberId, cardUid) {
-  await updateDoc(doc(db, 'members', memberId), { cardUid: normalizeCode(cardUid) })
+// Link a physical card to a member. A couple needs TWO cards (one each), so
+// UIDs live in an array; `cardUid` is kept in sync as the first one for older
+// code paths. Assigning a card that already belongs to someone else moves it.
+export async function assignCard(memberId, cardUid, membersCache = []) {
+  const uid = normalizeCode(cardUid)
+  const max = 2
+
+  // Take the card off whoever had it before — a UID can only be in one place.
+  const prev = membersCache.find(
+    (m) => m.id !== memberId && (m.cardUid === uid || (m.cardUids || []).includes(uid)),
+  )
+  if (prev) {
+    const left = (prev.cardUids || [prev.cardUid]).filter((u) => u && u !== uid)
+    await updateDoc(doc(db, 'members', prev.id), { cardUids: left, cardUid: left[0] || null })
+  }
+
+  const me = membersCache.find((m) => m.id === memberId)
+  const current = (me?.cardUids || (me?.cardUid ? [me.cardUid] : [])).filter(Boolean)
+  if (current.includes(uid)) return { already: true, uids: current }
+  const next = [...current, uid].slice(-max) // keep the newest, cap at 2
+  await updateDoc(doc(db, 'members', memberId), { cardUids: next, cardUid: next[0] })
+  return { already: false, uids: next, movedFrom: prev?.name || null }
+}
+
+// Take a card off a member (lost / wrongly assigned).
+export async function unassignCard(member, cardUid) {
+  const uid = normalizeCode(cardUid)
+  const left = (member.cardUids || [member.cardUid]).filter((u) => u && u !== uid)
+  await updateDoc(doc(db, 'members', member.id), { cardUids: left, cardUid: left[0] || null })
 }
 
 // Lost card / lost phone-QR: mint a fresh token so old copies stop working.
@@ -128,7 +154,9 @@ export async function replaceToken(memberId) {
 // falling back to a query only on a cold start.
 export function resolveMemberLocal(code, membersCache) {
   const c = normalizeCode(code)
-  return membersCache?.find((m) => m.memberToken === c || m.cardUid === c) || null
+  return membersCache?.find(
+    (m) => m.memberToken === c || m.cardUid === c || (m.cardUids || []).includes(c),
+  ) || null
 }
 export async function resolveMember(code, membersCache) {
   const local = resolveMemberLocal(code, membersCache)
@@ -138,6 +166,11 @@ export async function resolveMember(code, membersCache) {
     const snap = await getDocs(query(collection(db, 'members'), where(field, '==', c), limit(1)))
     if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() }
   }
+  // Second card of a couple lives in the array.
+  const arr = await getDocs(
+    query(collection(db, 'members'), where('cardUids', 'array-contains', c), limit(1)),
+  )
+  if (!arr.empty) return { id: arr.docs[0].id, ...arr.docs[0].data() }
   return null
 }
 

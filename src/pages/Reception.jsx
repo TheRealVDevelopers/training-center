@@ -330,7 +330,7 @@ export default function Reception({ viewOnly = false }) {
                       <button className="btn small primary" disabled={busyId === m.id} onClick={() => manualCheckIn(m)}>Check in</button>
                     )}
                     <button className="btn small" onClick={() => { setPanel(false); setRecharge(m) }}>Recharge</button>
-                    <AssignCardButton member={m} />
+                    <AssignCardButton member={m} all={members} />
                   </span>
                 </div>
               )
@@ -349,7 +349,8 @@ export default function Reception({ viewOnly = false }) {
 }
 
 // First-card assign, right from the desk: press, tap the blank card, done.
-function AssignCardButton({ member }) {
+// (For a stack of cards use Card Tracking → Assign cards — tap card, pick name.)
+function AssignCardButton({ member, all = [] }) {
   const [state, setState] = useState('idle') // idle | wait | done | err
   function arm() {
     setState('wait')
@@ -360,7 +361,7 @@ function AssignCardButton({ member }) {
       done = true
       cb?.(); ck?.(); clearTimeout(timer)
       if (!uid) { setState('err'); setTimeout(() => setState('idle'), 2000); return }
-      try { await assignCard(member.id, uid); setState('done'); setTimeout(() => setState('idle'), 2500) }
+      try { await assignCard(member.id, uid, all); setState('done'); setTimeout(() => setState('idle'), 2500) }
       catch { setState('err'); setTimeout(() => setState('idle'), 2000) }
     }
     cb = captureNextCard(finish)
