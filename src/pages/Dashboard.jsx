@@ -4,6 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { useMemo } from 'react'
 import { subscribeMemberHistory, ensureMemberToken } from '../lib/db'
+import ThemeToggle from '../components/ThemeToggle'
 
 // The member's page: their card, their credits, their pass. Nothing else.
 export default function Dashboard() {
@@ -47,6 +48,7 @@ export default function Dashboard() {
           <div className="muted small">Walk in · tap · train</div>
         </div>
         <div className="row gap">
+          <ThemeToggle />
           {isSuper && <Link className="btn ghost small" to="/owner">Owner</Link>}
           <Link className="btn ghost small" to="/profile">👤</Link>
           <button className="btn ghost small" onClick={logout}>Log out</button>

@@ -4,6 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { subscribeMembers, updateMemberProfile, ensureMemberToken, addMemberDirect } from '../lib/db'
 import { TIERS } from '../config'
 import { CARD_TIERS, tierByKey, detectTier, KEY_TO_TIER } from '../cards/cardTiers'
+import ThemeToggle from '../components/ThemeToggle'
 
 // Card Studio — the printing desk. Pick a member, their level picks the design
 // automatically (dropdown to correct it — the correction is saved), then Print
@@ -179,6 +180,7 @@ export default function CardStudio() {
             <div className="muted small">Select member → design picks itself → print</div>
           </div>
           <div className="row gap">
+            <ThemeToggle />
             {batch ? (
               <>
                 <span className="live-pill"><span className="live-dot" />Printing {batch.i + 1} of {batch.ids.length} — {members.find((m) => m.id === batch.ids[batch.i])?.name || ''}</span>

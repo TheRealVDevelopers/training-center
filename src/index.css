@@ -1048,3 +1048,70 @@ label.inline select { margin: 0; }
 .ctk-chip.full { border-color: rgba(53, 224, 138, 0.5); color: var(--ok); background: rgba(53, 224, 138, 0.12); }
 .ctk-chip.give.full { border-color: rgba(0, 224, 122, 0.6); }
 @media (max-width: 620px) { .ctk-row { flex-wrap: wrap; } .ctk-body { flex-basis: 100%; } }
+
+/* ============================================================
+   DAY THEME — stamped as <html data-theme="light">. The whole
+   app reads these tokens; the member card (hero) intentionally
+   stays a dark premium card in both themes.
+   ============================================================ */
+:root[data-theme="light"] {
+  --bg: #eef4ef;
+  --surface: #ffffff;
+  --surface-2: #f1f6f2;
+  --surface-3: #e7efe9;
+  --ink: #0e1a13;
+  --muted: #5c7065;
+  --line: rgba(16, 55, 35, 0.13);
+  --line-2: rgba(16, 55, 35, 0.24);
+  --brand: #00a651;
+  --brand-2: #00cf60;
+  --brand-ink: #067a3d;
+  --gold: #b98a00;
+  --danger: #d33a30;
+  --ok: #0d8a4e;
+  --warn: #8a5b00;
+  --grad-soft: linear-gradient(150deg, rgba(0, 166, 81, 0.12), rgba(141, 255, 79, 0.05));
+  --shadow: 0 3px 10px -3px rgba(14, 26, 19, 0.10), 0 8px 24px -12px rgba(14, 26, 19, 0.12);
+  --shadow-lg: 0 20px 46px -18px rgba(14, 26, 19, 0.28);
+  --shadow-brand: 0 12px 30px -10px rgba(0, 166, 81, 0.45);
+}
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(1100px 620px at 88% -8%, rgba(0, 166, 81, 0.10) 0%, transparent 58%),
+    radial-gradient(900px 560px at -12% 108%, rgba(0, 150, 220, 0.07) 0%, transparent 55%),
+    var(--bg);
+  color: var(--ink);
+}
+:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(16, 55, 35, 0.25); border-color: var(--bg); }
+:root[data-theme="light"] .btn.ghost { background: rgba(10, 40, 25, 0.05); }
+:root[data-theme="light"] .btn.ghost:hover { background: rgba(10, 40, 25, 0.10); }
+:root[data-theme="light"] .btn.danger { color: #c0392f; }
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .vital,
+:root[data-theme="light"] .mstat,
+:root[data-theme="light"] .qa-tile,
+:root[data-theme="light"] .station-tile,
+:root[data-theme="light"] .report-stat,
+:root[data-theme="light"] .ctk-row { background: var(--surface); }
+:root[data-theme="light"] .error { color: #b3261e; }
+:root[data-theme="light"] .banner.warn, :root[data-theme="light"] .topup-note,
+:root[data-theme="light"] .gfeed-startbanner { color: #8a5b00; background: rgba(185, 138, 0, 0.10); border-color: rgba(185, 138, 0, 0.30); }
+:root[data-theme="light"] .tag.pending { color: #1a5fbf; background: rgba(26, 102, 201, 0.12); }
+:root[data-theme="light"] .method-pill.upi { color: #1a5fbf; background: rgba(26, 102, 201, 0.12); }
+:root[data-theme="light"] .gfeed-top { background: rgba(255, 255, 255, 0.88); }
+:root[data-theme="light"] .gfeed-row { background: var(--surface); }
+:root[data-theme="light"] .gfeed-row.err .gfeed-line { color: #c0392f; }
+:root[data-theme="light"] .gfeed-cr.low { color: #c0392f; }
+:root[data-theme="light"] .memberrow:hover { background: #fff; }
+:root[data-theme="light"] .csrow.couplerow .couplename,
+:root[data-theme="light"] .ctk-name.couplename { color: #c2186b; }
+:root[data-theme="light"] .ctk-row.couple { border-color: rgba(194, 24, 107, 0.35); background: linear-gradient(150deg, rgba(194, 24, 107, 0.06), transparent 60%), var(--surface); }
+:root[data-theme="light"] .ctk-chip.half { color: #8a5b00; }
+:root[data-theme="light"] .recharge-overlay { background: rgba(20, 35, 26, 0.38); }
+:root[data-theme="light"] .recharge-panel { box-shadow: 0 24px 60px rgba(14, 26, 19, 0.30); }
+:root[data-theme="light"] .doorqr-card { box-shadow: 0 24px 70px rgba(14, 26, 19, 0.25); }
+:root[data-theme="light"] .ct-toggle.on.printed { background: #dff5e7; }
+:root[data-theme="light"] .cs-ptoggle.half { color: #8a5b00; }
+:root[data-theme="light"] .scan-ready { color: var(--brand-ink); }
+:root[data-theme="light"] .seg { background: #e3ebe5; border-color: var(--line); }
+:root[data-theme="light"] .seg button.on { background: #ffffff; color: var(--ink); box-shadow: 0 1px 5px rgba(14, 26, 19, 0.2); }

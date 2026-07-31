@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/aut
 import { auth } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
 import { CURRENCY, TIERS, PACK_CREDITS, packPrice } from '../config'
+import ThemeToggle from '../components/ThemeToggle'
 import {
   subscribeMembers,
   subscribeActiveSession,
@@ -81,6 +82,7 @@ function OwnerHub({ logout }) {
           <div className="muted small">Saturday Training</div>
         </div>
         <div className="row gap">
+          <ThemeToggle />
           <Link className="btn ghost small" to="/admin">🖥 Reception</Link>
           <button className="btn ghost small" onClick={logout}>Log out</button>
         </div>

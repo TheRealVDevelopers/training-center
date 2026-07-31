@@ -149,21 +149,51 @@ export async function uploadPhoto(path, file) {
 
 // ---- Sessions (auto-start on first tap) ------------------------------------
 
+// Only TODAY's session counts as live. An 'active' session left over from a
+// previous day (someone forgot to press End) is ignored and closed, so last
+// week's numbers can never leak into this week's board.
 export function subscribeActiveSession(cb) {
-  const q = query(collection(db, 'sessions'), where('status', '==', 'active'), limit(1))
-  return onSnapshot(q, (snap) =>
-    cb(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }),
-  )
+  const q = query(collection(db, 'sessions'), where('status', '==', 'active'), limit(5))
+  return onSnapshot(q, (snap) => {
+    const today = sessionIdFor()
+    let live = null
+    snap.docs.forEach((d) => {
+      if (d.id === today) live = { id: d.id, ...d.data() }
+      else updateDoc(d.ref, { status: 'ended', endedAt: serverTimestamp() }).catch(() => {})
+    })
+    cb(live)
+  })
+}
+
+// The session ID *is* the local date — 'sessions/2026-07-25'. This makes one
+// session per day structurally impossible to duplicate: ending a session and
+// tapping again re-opens the SAME day instead of creating a second one.
+// Always local parts (IST), never toISOString() — a 9pm Saturday must not file
+// itself under Sunday.
+export function sessionIdFor(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
 export async function ensureActiveSession() {
-  const snap = await getDocs(query(collection(db, 'sessions'), where('status', '==', 'active'), limit(1)))
-  if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() }
-  const created = await addDoc(collection(db, 'sessions'), {
-    status: 'active',
-    startedAt: serverTimestamp(),
-  })
-  return { id: created.id, status: 'active' }
+  const id = sessionIdFor()
+  const ref = doc(db, 'sessions', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      date: id,
+      status: 'active',
+      startedAt: serverTimestamp(),
+      endedAt: null,
+    })
+    return { id, date: id, status: 'active' }
+  }
+  const s = snap.data()
+  // Re-open today's session if staff ended it and someone else arrives.
+  if (s.status !== 'active') {
+    await updateDoc(ref, { status: 'active', endedAt: null })
+  }
+  return { id, ...s, date: s.date || id, status: 'active' }
 }
 
 export async function endSession(sessionId) {
@@ -205,8 +235,10 @@ export async function checkIn(member, session, { gate = 'desk', method = 'card' 
     tx.update(refM, { credits: credits - 1 })
     tx.set(refE, {
       sessionId: session.id,
+      sessionDate: session.date || session.id, // denormalised: reports group by day
       memberId: m.id,
       name: m.name || '',
+      tier: m.tier || '',                      // what was true ON THE DAY
       photoURL: m.photoURL || '',
       couple: !!m.couple,
       guests: 0,
@@ -340,6 +372,29 @@ export async function deletePayment(txnId) {
 
 export function subscribeSessionEntries(sessionId, cb) {
   const q = query(collection(db, 'entries'), where('sessionId', '==', sessionId))
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+}
+
+// One member's whole attendance history (member profile, own dashboard).
+// Needs the composite index memberId ASC + at DESC (firestore.indexes.json).
+export function subscribeMemberEntries(memberId, cb, max = 120) {
+  const q = query(
+    collection(db, 'entries'),
+    where('memberId', '==', memberId),
+    orderBy('at', 'desc'),
+    limit(max),
+  )
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+}
+
+// Every entry in a date range — powers month reports and the matrix.
+// Dates are 'YYYY-MM-DD' strings, so a plain range query works.
+export function subscribeEntriesBetween(fromDate, toDate, cb) {
+  const q = query(
+    collection(db, 'entries'),
+    where('sessionDate', '>=', fromDate),
+    where('sessionDate', '<=', toDate),
+  )
   return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
 }
 

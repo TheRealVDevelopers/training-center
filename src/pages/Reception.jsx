@@ -24,6 +24,7 @@ import { useCardWedge, captureOneCard } from '../lib/wedge'
 import { useLocalReader, sendReaderFeedback, captureNextCard } from '../lib/localReader'
 import { normalizeCode } from '../lib/readerId'
 import { feedback, primeAudio } from '../lib/feedback'
+import ThemeToggle from '../components/ThemeToggle'
 
 // THE staff screen. Tap → GREEN in under a heartbeat (verdict comes from the
 // live member list already on this device; the cloud confirms in the
@@ -250,6 +251,7 @@ export default function Reception({ viewOnly = false }) {
           </div>
         </div>
         <div className="gfeed-stats">
+          <ThemeToggle />
           <div className="gfeed-count"><b>{inside}</b><span>inside</span></div>
           <div className="gfeed-count"><b>{today}</b><span>today</span></div>
           {!viewOnly && (

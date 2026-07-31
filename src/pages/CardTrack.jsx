@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { serverTimestamp } from 'firebase/firestore'
 import { subscribeMembers, updateMemberProfile } from '../lib/db'
+import ThemeToggle from '../components/ThemeToggle'
 
 // Card Tracking — the full-screen handover register. Every member, big rows:
 //   PRINTED n/needed  ·  GIVEN n/needed   (couples 👫 need 2 of each)
@@ -54,6 +55,7 @@ export default function CardTrack() {
           <div className="muted small">Tap PRINTED / GIVEN to advance — couples 👫 need 2 of each</div>
         </div>
         <div className="row gap">
+          <ThemeToggle />
           <Link className="btn ghost small" to="/admin/print">🖨 Card Studio</Link>
           <Link className="btn ghost small" to="/admin">‹ Reception</Link>
         </div>
