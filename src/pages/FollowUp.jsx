@@ -59,6 +59,15 @@ export default function FollowUp() {
   const regular = rows.filter((r) => r.risk === 'regular').length
   const needsAttention = BUCKETS.reduce((n, b) => n + (grouped[b.key]?.length || 0), 0)
 
+  // F13 — who will be turned away at the door on Saturday unless they recharge.
+  // Regular attenders first: they are the ones who will actually turn up.
+  const lowCredit = useMemo(
+    () => rows
+      .filter((r) => (r.m.credits || 0) < 1 && r.risk !== 'never' && r.risk !== 'dormant')
+      .sort((a, b) => (b.att.pct ?? 0) - (a.att.pct ?? 0)),
+    [rows],
+  )
+
   return (
     <div className="page wide">
       <header className="topbar">
@@ -81,6 +90,32 @@ export default function FollowUp() {
 
       {!sessions.length && (
         <div className="card"><div className="muted small">No Saturdays recorded yet — this list fills up after the first few sessions.</div></div>
+      )}
+
+      {/* Low credit — they'll be stopped at the door unless they recharge */}
+      {lowCredit.length > 0 && (
+        <div className="card">
+          <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <h3 style={{ margin: 0 }}>💳 Out of credits ({lowCredit.length})</h3>
+            <span className="muted small">Regular attenders first — remind them before Saturday</span>
+          </div>
+          {lowCredit.slice(0, 20).map(({ m, att }) => {
+            const first = m.name?.split(' ')[0] || ''
+            const wa = waLink(m.mobile, `Hi ${first} 👋 Quick reminder — your entries are finished. Recharge at the desk this Saturday and you're straight in. 🌿`)
+            return (
+              <div key={m.id} className="hist-row">
+                {m.photoURL ? <img className="avatar xs" src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
+                <div className="hist-body">
+                  <div className="hist-title"><Link to={`/owner/member/${m.id}`}>{m.name}</Link>{m.couple ? ' 👫' : ''}</div>
+                  <div className="muted small">
+                    {att.pct != null ? `${att.pct}% attendance` : 'new member'} · 0 credits · {m.tier || 'Associate'}
+                  </div>
+                </div>
+                {wa && <a className="btn small" href={wa} target="_blank" rel="noreferrer">💬</a>}
+              </div>
+            )
+          })}
+        </div>
       )}
 
       {BUCKETS.map((b) => {

@@ -1208,3 +1208,26 @@ a.hist-row:hover { text-decoration: none; background: var(--surface-2); }
   .report .card { break-inside: avoid; }
   .rp-table { font-size: 11px; }
 }
+
+/* ---- Attendance matrix ---- */
+.mx-card { padding: 14px; }
+.mx-wrap { overflow: auto; max-height: 72vh; }
+.mx { border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+.mx th, .mx td { padding: 7px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.mx thead th { position: sticky; top: 0; z-index: 2; background: var(--surface);
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; color: var(--muted);
+  border-bottom: 1.5px solid var(--line-2); }
+.mx .mx-name { position: sticky; left: 0; z-index: 1; background: var(--surface);
+  text-align: left; min-width: 150px; max-width: 190px; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 700; border-right: 1px solid var(--line); }
+.mx thead .mx-name { z-index: 3; }
+.mx .mx-col { text-align: center; min-width: 42px; }
+.mx .mx-col a { color: var(--muted); }
+.mx .mx-cell { text-align: center; font-weight: 800; }
+.mx .mx-cell.in { color: var(--ok); background: rgba(53, 224, 138, 0.09); }
+.mx .mx-cell.in a { color: var(--ok); text-decoration: none; }
+.mx .mx-cell.out { color: var(--muted); opacity: 0.5; }
+.mx .mx-pct { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums;
+  position: sticky; right: 0; background: var(--surface); border-left: 1px solid var(--line); }
+.mx tbody tr:hover .mx-name, .mx tbody tr:hover .mx-pct { background: var(--surface-2); }
+@media print { .mx-wrap { max-height: none; overflow: visible; } .mx { font-size: 9px; } }

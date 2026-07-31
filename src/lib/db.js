@@ -19,6 +19,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { PACK_CREDITS, packPrice } from '../config'
 import { normalizeCode } from './readerId'
+import { currentActor } from './actor'
 
 // ============================================================================
 // THE MODEL — one sentence each:
@@ -353,6 +354,8 @@ export async function recharge(memberId, packs, { method = 'cash', ref: referenc
       method,
       ref: reference || null,
       note: `Recharge · ${credits} credits`,
+      memberName: m.name || '',
+      by: currentActor(),               // audit: which desk / who took the money
       createdAt: serverTimestamp(),
     })
     return { credits, amount, total: (m.credits || 0) + credits }
@@ -374,6 +377,8 @@ export async function adjustCredits(memberId, delta, note) {
       credits: delta,
       amount: 0,
       note: note || 'Adjustment',
+      memberName: snap.data().name || '',
+      by: currentActor(),
       createdAt: serverTimestamp(),
     })
     return now

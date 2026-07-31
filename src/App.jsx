@@ -18,6 +18,8 @@ import MemberProfile from './pages/MemberProfile'
 import SessionReport from './pages/SessionReport'
 import FollowUp from './pages/FollowUp'
 import MonthReport from './pages/MonthReport'
+import Matrix from './pages/Matrix'
+import ActivityLog from './pages/ActivityLog'
 
 export default function App() {
   const { loading } = useAuth()
@@ -43,6 +45,8 @@ export default function App() {
       <Route path="/owner/session/:date" element={<OwnerOnly><SessionReport /></OwnerOnly>} />
       <Route path="/owner/month/:month" element={<OwnerOnly><MonthReport /></OwnerOnly>} />
       <Route path="/owner/month" element={<OwnerOnly><MonthReport /></OwnerOnly>} />
+      <Route path="/owner/matrix" element={<OwnerOnly><Matrix /></OwnerOnly>} />
+      <Route path="/owner/activity" element={<OwnerOnly><ActivityLog /></OwnerOnly>} />
       <Route path="/owner/followup" element={<OwnerOnly><FollowUp /></OwnerOnly>} />
 
       {/* Public: the door QR screen and the watch-only live board it opens */}

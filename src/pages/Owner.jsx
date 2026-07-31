@@ -83,6 +83,7 @@ function OwnerHub({ logout }) {
         </div>
         <div className="row gap">
           <ThemeToggle />
+          <Link className="btn ghost small" to="/owner/matrix">📊 Attendance</Link>
           <Link className="btn ghost small" to="/owner/month">📄 Month report</Link>
           <Link className="btn ghost small" to="/owner/followup">💬 Follow-up</Link>
           <Link className="btn ghost small" to="/admin">🖥 Reception</Link>
@@ -456,6 +457,7 @@ function PrintTab({ members }) {
         <p className="muted small">Pick a member — their level picks the card design — print. Mark Printed / Given on the People tab as you go.</p>
         <div className="actions">
           <Link className="btn big" to="/admin/print" target="_blank">Open Card Studio ›</Link>
+          <Link className="btn big" to="/owner/activity">Activity log — who took the money ›</Link>
           <Link className="btn big" to="/admin/cards" target="_blank">Card tracking — printed / given ›</Link>
           <Link className="btn big" to="/admin/testcard" target="_blank">Printer test page ›</Link>
           <Link className="btn big" to="/door" target="_blank">Door QR screen ›</Link>
