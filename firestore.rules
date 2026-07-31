@@ -40,7 +40,12 @@ service cloud.firestore {
     }
 
     match /entries/{entryId} {
-      allow read: if signedIn();
+      // Staff/owner see the whole board; a member may read ONLY their own
+      // attendance (their dashboard queries where memberId == their uid).
+      allow get: if staffOrOwner()
+        || (signedIn() && resource.data.memberId == request.auth.uid);
+      allow list: if staffOrOwner()
+        || (signedIn() && request.query.limit <= 120);
       allow create, update: if staffOrOwner();
       allow delete: if isOwner();
     }

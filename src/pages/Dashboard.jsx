@@ -3,22 +3,31 @@ import { Link } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { useMemo } from 'react'
-import { subscribeMemberHistory, ensureMemberToken } from '../lib/db'
+import { subscribeMemberHistory, ensureMemberToken, subscribeMemberEntries, subscribeSessions } from '../lib/db'
+import { attendanceOf } from '../lib/attendance'
 import ThemeToggle from '../components/ThemeToggle'
 
 // The member's page: their card, their credits, their pass. Nothing else.
 export default function Dashboard() {
   const { member, logout, isSuper } = useAuth()
   const [history, setHistory] = useState([])
+  const [entries, setEntries] = useState([])
+  const [sessions, setSessions] = useState([])
   const [showPass, setShowPass] = useState(false)
   const qrRef = useRef(null)
 
   useEffect(() => (member ? subscribeMemberHistory(member.id, setHistory) : undefined), [member])
+  useEffect(() => (member ? subscribeMemberEntries(member.id, setEntries, 40) : undefined), [member])
+  useEffect(() => subscribeSessions(setSessions, 40), [])
   useEffect(() => {
     if (member && !member.memberToken) ensureMemberToken(member).catch(() => {})
   }, [member])
 
-  const attended = useMemo(() => history.filter((t) => t.type === 'entry').length, [history])
+  const att = useMemo(
+    () => (member ? attendanceOf(member, sessions, entries) : null),
+    [member, sessions, entries],
+  )
+  const attended = att?.attended.length ?? 0
 
   if (!member) return <div className="center muted">Loading your card…</div>
   const credits = member.credits || 0
@@ -85,6 +94,33 @@ export default function Dashboard() {
       </button>
       {credits < 1 && (
         <div className="topup-note"><span>💳</span> No entries left — recharge at the desk on Saturday and you're in.</div>
+      )}
+
+      {/* Your Saturdays — the same strip the owner sees, but only your own */}
+      {att && att.total > 0 && (
+        <div className="card">
+          <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <h3 style={{ margin: 0 }}>Your Saturdays</h3>
+            <span className="muted small">
+              You've come to <b>{attended} of {att.total}</b>
+              {att.streak >= 2 ? ` · ${att.streak} in a row 🔥` : ''}
+            </span>
+          </div>
+          <div className="mp-strip">
+            {att.rows.slice(-12).map((r) => (
+              <span key={r.session.id} className={`mp-dot ${r.present ? 'in' : 'out'}`} title={`${r.date} — ${r.present ? 'you came' : 'you missed this one'}`}>
+                <span className="mp-dot-day">{r.date.slice(8)}</span>
+              </span>
+            ))}
+          </div>
+          {att.pct != null && (
+            <div className="muted small" style={{ marginTop: 10 }}>
+              {att.pct >= 80 ? '🌟 Brilliant attendance — keep it going!'
+                : att.pct >= 50 ? 'Good going — see you this Saturday.'
+                : 'We’d love to see you more often 🌿'}
+            </div>
+          )}
+        </div>
       )}
 
       {/* History */}

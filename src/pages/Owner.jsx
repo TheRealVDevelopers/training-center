@@ -83,6 +83,7 @@ function OwnerHub({ logout }) {
         </div>
         <div className="row gap">
           <ThemeToggle />
+          <Link className="btn ghost small" to="/owner/month">📄 Month report</Link>
           <Link className="btn ghost small" to="/owner/followup">💬 Follow-up</Link>
           <Link className="btn ghost small" to="/admin">🖥 Reception</Link>
           <button className="btn ghost small" onClick={logout}>Log out</button>
