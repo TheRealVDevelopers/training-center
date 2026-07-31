@@ -26,7 +26,10 @@ export default function PinGate({ label, children }) {
     return subscribeSettings(setSettings)
   }, [loading, user])
 
-  if (loading || (user && settings === undefined)) return <div className="center muted">Loading…</div>
+  // Wait for the anonymous identity BEFORE rendering the staff screen. Without
+  // this, a brand-new device renders Reception while auth is still in flight,
+  // every query comes back permission-denied and the page white-screens.
+  if (loading || !user || settings === undefined) return <div className="center muted">Loading…</div>
   if (isSuper) return children
 
   const pin = settings?.staffPin

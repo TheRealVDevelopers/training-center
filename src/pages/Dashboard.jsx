@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { useMemo } from 'react'
-import { subscribeMemberHistory, ensureMemberToken, subscribeMemberEntries, subscribeSessions } from '../lib/db'
+import { subscribeMemberHistory, ensureMemberToken, subscribeMemberEntries, subscribeSessions, uploadPhoto, updateMemberProfile } from '../lib/db'
 import { attendanceOf } from '../lib/attendance'
+import { squarePhoto } from '../lib/photo'
 import ThemeToggle from '../components/ThemeToggle'
 
 // The member's page: their card, their credits, their pass. Nothing else.
@@ -14,7 +15,25 @@ export default function Dashboard() {
   const [entries, setEntries] = useState([])
   const [sessions, setSessions] = useState([])
   const [showPass, setShowPass] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState('')
   const qrRef = useRef(null)
+
+  // One-tap photo: pick from gallery or camera → squared + shrunk → uploaded.
+  async function onPhoto(e) {
+    const file = e.target.files?.[0]
+    if (!file || !member) return
+    setPhotoBusy('Adding your photo…')
+    try {
+      const small = await squarePhoto(file)
+      const url = await uploadPhoto(`members/${member.id}/profile.jpg`, small)
+      await updateMemberProfile(member.id, { photoURL: url })
+      setPhotoBusy('✓ Photo saved — see you on Saturday!')
+      setTimeout(() => setPhotoBusy(''), 3000)
+    } catch (err) {
+      setPhotoBusy(err.message || 'Could not save that photo — try another one.')
+      setTimeout(() => setPhotoBusy(''), 4000)
+    }
+  }
 
   useEffect(() => (member ? subscribeMemberHistory(member.id, setHistory) : undefined), [member])
   useEffect(() => (member ? subscribeMemberEntries(member.id, setEntries, 40) : undefined), [member])
@@ -89,9 +108,29 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Photo — the big ask this week, so it sits above everything else */}
+      {!member.photoURL && (
+        <label className="photo-cta">
+          <input type="file" accept="image/*" onChange={onPhoto} style={{ display: 'none' }} />
+          <span className="photo-cta-ico">📸</span>
+          <span className="photo-cta-body">
+            <b>Add your photo</b>
+            <span>So your face shows at the door when you tap. Takes 5 seconds.</span>
+          </span>
+          <span className="chev">›</span>
+        </label>
+      )}
+      {photoBusy && <div className="banner">{photoBusy}</div>}
+
       <button className="btn primary block big-cta" onClick={() => setShowPass(true)} disabled={!member.memberToken}>
         🎟️ Show my pass
       </button>
+      {member.photoURL && (
+        <label className="btn ghost block" style={{ marginTop: 8, cursor: 'pointer' }}>
+          <input type="file" accept="image/*" onChange={onPhoto} style={{ display: 'none' }} />
+          📸 Change my photo
+        </label>
+      )}
       {credits < 1 && (
         <div className="topup-note"><span>💳</span> No entries left — recharge at the desk on Saturday and you're in.</div>
       )}

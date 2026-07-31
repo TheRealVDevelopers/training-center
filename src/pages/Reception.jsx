@@ -8,6 +8,7 @@ import {
   subscribeActiveSession,
   subscribeSessionEntries,
   subscribeScanEvents,
+  subscribeAllPayments,
   resolveMemberLocal,
   resolveMember,
   ensureActiveSession,
@@ -37,10 +38,11 @@ export default function Reception({ viewOnly = false }) {
   const [session, setSession] = useState(null)
   const [entries, setEntries] = useState([])
   const [events, setEvents] = useState([])
+  const [payments, setPayments] = useState([])
   const [localRows, setLocalRows] = useState([]) // optimistic rows, instant
   const [mode, setMode] = useState('in') // 'in' | 'out'
   const [rechargeFor, setRecharge] = useState(null) // member | null
-  const [panel, setPanel] = useState(false) // search slide-over
+  const [panel, setPanel] = useState(false) // false | 'find' | 'renewal'
   const [search, setSearch] = useState('')
   const [busyId, setBusyId] = useState('')
   const [ending, setEnding] = useState(false)
@@ -65,6 +67,7 @@ export default function Reception({ viewOnly = false }) {
   useEffect(() => subscribeActiveSession(setSession), [])
   useEffect(() => (session ? subscribeSessionEntries(session.id, setEntries) : setEntries([]) || undefined), [session])
   useEffect(() => subscribeScanEvents(setEvents, 60), [])
+  useEffect(() => (viewOnly ? undefined : subscribeAllPayments(setPayments)), [viewOnly])
   useEffect(() => { membersRef.current = members }, [members])
   useEffect(() => { sessionRef.current = session }, [session])
   useEffect(() => { entriesRef.current = entries }, [entries])
@@ -116,6 +119,7 @@ export default function Reception({ viewOnly = false }) {
       name: cached?.name || '',
       photoURL: cached?.photoURL || '',
       mobile: cached?.mobile || '',
+      creditsBefore: cached?.credits ?? null,
       credits: verdict.kind === 'welcome' ? (cached.credits || 1) - 1 : cached?.credits || 0,
       gate,
     })
@@ -180,6 +184,13 @@ export default function Reception({ viewOnly = false }) {
   // ---- Derived numbers -----------------------------------------------------
   const inside = entries.filter((e) => !e.exitedAt).reduce((n, e) => n + 1 + (e.guests || 0), 0)
   const today = entries.reduce((n, e) => n + 1 + (e.guests || 0), 0)
+  // Renewals taken today — the other half of the end-of-day report.
+  const renewedToday = useMemo(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0)
+    const s = start.getTime() / 1000
+    const rows = payments.filter((p) => p.type === 'recharge' && (p.createdAt?.seconds || 0) >= s)
+    return { count: rows.length, amount: rows.reduce((n, p) => n + (p.amount || 0), 0) }
+  }, [payments])
   const memberById = useMemo(() => Object.fromEntries(members.map((m) => [m.id, m])), [members])
   const entryByMember = useMemo(() => Object.fromEntries(entries.map((e) => [e.memberId, e])), [entries])
 
@@ -258,12 +269,18 @@ export default function Reception({ viewOnly = false }) {
           <div className="gfeed-count"><b>{inside}</b><span>inside</span></div>
           <div className="gfeed-count"><b>{today}</b><span>today</span></div>
           {!viewOnly && (
+            <div className="gfeed-count" title={`${CURRENCY}${renewedToday.amount} collected today`}>
+              <b>{renewedToday.count}</b><span>renewed</span>
+            </div>
+          )}
+          {!viewOnly && (
             <div className="gfeed-ctrl">
               <div className="seg inout">
                 <button className={mode === 'in' ? 'on' : ''} onClick={() => setMode('in')}>↓ In</button>
                 <button className={mode === 'out' ? 'on out' : ''} onClick={() => setMode('out')}>↑ Out</button>
               </div>
-              <button className="btn ghost small" onClick={() => setPanel(true)}>🔍 Find member</button>
+              <button className="btn primary small" onClick={() => { setPanel('renewal'); setSearch('') }}>💳 Renewal</button>
+              <button className="btn ghost small" onClick={() => { setPanel('find'); setSearch('') }}>🔍 Find member</button>
               {session && <button className="btn danger small" onClick={stopDay} disabled={ending}>End session</button>}
               <button className="btn ghost small" onClick={() => setDeviceOpen(true)} title="Name this device — it appears on every payment in the activity log">
                 🖥 {device}
@@ -304,7 +321,12 @@ export default function Reception({ viewOnly = false }) {
                 ) : canGuest ? (
                   <button className="gfeed-guest" disabled={busyId === e.memberId} onClick={() => guestFor(e.memberId)}>+ Guest</button>
                 ) : (
-                  <span className={`gfeed-cr ${e.ok ? '' : 'low'}`}>{e.credits ?? 0} cr</span>
+                  <span className={`gfeed-cr ${e.ok ? '' : 'low'}`}>
+                    {/* on a paid entry show what it cost them: 3 → 2 */}
+                    {e.kind === 'welcome' && e.creditsBefore != null
+                      ? <><span className="cr-was">{e.creditsBefore}</span> → {e.credits ?? 0} cr</>
+                      : <>{e.credits ?? 0} cr</>}
+                  </span>
                 )}
                 <span className="gfeed-time">{fmtTime(e)}</span>
               </div>
@@ -317,13 +339,26 @@ export default function Reception({ viewOnly = false }) {
       {panel && !viewOnly && (
         <div className="manual-panel">
           <div className="manual-head">
-            <span className="strong">Find member</span>
+            <span className="strong">{panel === 'renewal' ? '💳 Renewal — pick the member' : 'Find member'}</span>
             <button className="btn ghost small" onClick={() => { setPanel(false); setSearch('') }}>Close</button>
           </div>
           <input autoFocus placeholder="Name or mobile…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <div className="manual-list">
             {matches.map((m) => {
               const e = entryByMember[m.id]
+              // Renewal mode: the whole row is the button — tap the name, confirm, done.
+              if (panel === 'renewal') {
+                return (
+                  <button key={m.id} className="manual-row" onClick={() => { setPanel(false); setRecharge(m) }}>
+                    {m.photoURL ? <img src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
+                    <span className="manual-name">
+                      {m.name}{m.couple ? ' 👫' : ''}
+                      <span className="muted small"> · {m.tier || 'Associate'} · {m.credits || 0} cr now</span>
+                    </span>
+                    <span className="asg-go">{CURRENCY}{packPrice(m.tier)} · +{PACK_CREDITS} ›</span>
+                  </button>
+                )
+              }
               return (
                 <div key={m.id} className="manual-row" style={{ cursor: 'default' }}>
                   {m.photoURL ? <img src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
