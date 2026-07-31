@@ -24,6 +24,7 @@ import { useCardWedge, captureOneCard } from '../lib/wedge'
 import { useLocalReader, sendReaderFeedback, captureNextCard } from '../lib/localReader'
 import { normalizeCode } from '../lib/readerId'
 import { feedback, primeAudio } from '../lib/feedback'
+import { getDeviceLabel, setDeviceLabel } from '../lib/actor'
 import ThemeToggle from '../components/ThemeToggle'
 
 // THE staff screen. Tap → GREEN in under a heartbeat (verdict comes from the
@@ -43,6 +44,8 @@ export default function Reception({ viewOnly = false }) {
   const [search, setSearch] = useState('')
   const [busyId, setBusyId] = useState('')
   const [ending, setEnding] = useState(false)
+  const [deviceOpen, setDeviceOpen] = useState(false)
+  const [device, setDevice] = useState(() => getDeviceLabel())
 
   const membersRef = useRef([])
   const sessionRef = useRef(null)
@@ -262,6 +265,9 @@ export default function Reception({ viewOnly = false }) {
               </div>
               <button className="btn ghost small" onClick={() => setPanel(true)}>🔍 Find member</button>
               {session && <button className="btn danger small" onClick={stopDay} disabled={ending}>End session</button>}
+              <button className="btn ghost small" onClick={() => setDeviceOpen(true)} title="Name this device — it appears on every payment in the activity log">
+                🖥 {device}
+              </button>
               <Link className="btn ghost small" to="/owner" title="Owner">⚙</Link>
             </div>
           )}
@@ -337,6 +343,39 @@ export default function Reception({ viewOnly = false }) {
             })}
             {q && matches.length === 0 && <div className="muted small">No member matches “{search}”.</div>}
             {!q && <div className="muted small">Type a name or mobile number.</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Name this device — shows against every payment in the activity log */}
+      {deviceOpen && !viewOnly && (
+        <div className="recharge-overlay" onClick={() => setDeviceOpen(false)}>
+          <div className="recharge-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="recharge-head">
+              <div>
+                <div className="recharge-name">🖥 Name this device</div>
+                <div className="muted small">Shown against every recharge taken here, so the owner can tell the desks apart.</div>
+              </div>
+              <button className="btn ghost small" onClick={() => setDeviceOpen(false)}>✕</button>
+            </div>
+            <label>Device name</label>
+            <input
+              autoFocus value={device} maxLength={24}
+              onChange={(e) => setDevice(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { setDeviceLabel(device.trim() || 'Reception'); setDeviceOpen(false) } }}
+              placeholder="Front desk"
+            />
+            <div className="row gap" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+              {['Front desk', 'Desk 2', 'Entry gate', 'Owner laptop'].map((s) => (
+                <button key={s} type="button" className={`amt-chip ${device === s ? 'on' : ''}`} onClick={() => setDevice(s)}>{s}</button>
+              ))}
+            </div>
+            <button className="btn primary block" onClick={() => { const v = device.trim() || 'Reception'; setDevice(v); setDeviceLabel(v); setDeviceOpen(false) }}>
+              Save
+            </button>
+            <p className="muted small" style={{ margin: '10px 0 0' }}>
+              Stored on this device only — each desk gets its own name.
+            </p>
           </div>
         </div>
       )}
