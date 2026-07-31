@@ -83,6 +83,7 @@ function OwnerHub({ logout }) {
         </div>
         <div className="row gap">
           <ThemeToggle />
+          <Link className="btn ghost small" to="/owner/followup">💬 Follow-up</Link>
           <Link className="btn ghost small" to="/admin">🖥 Reception</Link>
           <button className="btn ghost small" onClick={logout}>Log out</button>
         </div>
@@ -159,7 +160,10 @@ function TodayTab({ members }) {
           <div key={e.id} className="hist-row">
             {e.photoURL ? <img className="avatar xs" src={e.photoURL} alt="" /> : <span className="avatar-fallback sm">{(e.name || '?')[0]}</span>}
             <div className="hist-body">
-              <div className="hist-title">{e.name}{e.couple ? ' 👫' : ''}{e.guests ? ` +${e.guests} guest${e.guests > 1 ? 's' : ''}` : ''}</div>
+              <div className="hist-title">
+                <Link to={`/owner/member/${e.memberId}`}>{e.name}</Link>
+                {e.couple ? ' 👫' : ''}{e.guests ? ` +${e.guests} guest${e.guests > 1 ? 's' : ''}` : ''}
+              </div>
               <div className="muted small">In {fmtT(e.at)}{e.exitedAt ? ` · left ${fmtT(e.exitedAt)}` : ''}</div>
             </div>
             <span className={`tag ${e.exitedAt ? 'muted' : 'ok'}`}>{e.exitedAt ? 'left' : 'inside'}</span>
@@ -196,11 +200,12 @@ function PastSession({ session }) {
     ? new Date(session.startedAt.seconds * 1000).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
     : '—'
   return (
-    <div className="hist-row">
+    <Link className="hist-row" to={`/owner/session/${session.id}`}>
       <span className="hist-ico in">📅</span>
       <div className="hist-body"><div className="hist-title">{day}</div></div>
       <b>{people} attended</b>
-    </div>
+      <span className="muted" style={{ marginLeft: 8 }}>›</span>
+    </Link>
   )
 }
 
@@ -322,6 +327,7 @@ function PersonRow({ m, open, onToggle }) {
           </div>
 
           <div className="row gap wrap" style={{ marginTop: 10 }}>
+            <Link className="btn small primary" to={`/owner/member/${m.id}`}>📊 Full profile</Link>
             <Link className="btn small" to={`/admin/print?m=${m.id}`} target="_blank">🖨 Print card</Link>
             <button className="btn small" onClick={newCard}>♻ Replace card/QR</button>
             <button className="btn small" onClick={resetPw}>✉ Password reset</button>

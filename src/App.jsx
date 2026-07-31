@@ -13,6 +13,10 @@ import CardStudio from './pages/CardStudio'
 import TestCard from './pages/TestCard'
 import Poster from './pages/Poster'
 import CardTrack from './pages/CardTrack'
+import OwnerOnly from './components/OwnerOnly'
+import MemberProfile from './pages/MemberProfile'
+import SessionReport from './pages/SessionReport'
+import FollowUp from './pages/FollowUp'
 
 export default function App() {
   const { loading } = useAuth()
@@ -34,6 +38,9 @@ export default function App() {
 
       {/* Owner — email login */}
       <Route path="/owner" element={<Owner />} />
+      <Route path="/owner/member/:id" element={<OwnerOnly><MemberProfile /></OwnerOnly>} />
+      <Route path="/owner/session/:date" element={<OwnerOnly><SessionReport /></OwnerOnly>} />
+      <Route path="/owner/followup" element={<OwnerOnly><FollowUp /></OwnerOnly>} />
 
       {/* Public: the door QR screen and the watch-only live board it opens */}
       <Route path="/door" element={<Door />} />
