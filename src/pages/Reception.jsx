@@ -27,6 +27,7 @@ import { normalizeCode } from '../lib/readerId'
 import { feedback, primeAudio } from '../lib/feedback'
 import { getDeviceLabel, setDeviceLabel } from '../lib/actor'
 import ThemeToggle from '../components/ThemeToggle'
+import { QRCodeCanvas } from 'qrcode.react'
 
 // THE staff screen. Tap → GREEN in under a heartbeat (verdict comes from the
 // live member list already on this device; the cloud confirms in the
@@ -61,6 +62,12 @@ export default function Reception({ viewOnly = false }) {
   const [bridgeUp, setBridgeUp] = useState(null)
   const [lastRead, setLastRead] = useState(null)
   const [winFocused, setWinFocused] = useState(true)
+  // Reader test mode: while open, every tap/scan is echoed here and NOBODY is
+  // charged — it exercises the exact same input path the real check-in uses.
+  const [testing, setTesting] = useState(false)
+  const [testLog, setTestLog] = useState([])
+  const testingRef = useRef(false)
+  useEffect(() => { testingRef.current = testing }, [testing])
   useEffect(() => {
     if (viewOnly) return undefined
     const check = () => setWinFocused(document.hasFocus())
@@ -115,7 +122,29 @@ export default function Reception({ viewOnly = false }) {
   async function onCode(code, reader) {
     if (!code || viewOnly) return
     setLastRead(new Date()) // proof on screen that the read reached the app
-    const gate = reader || 'desk'
+
+    // The catcher (QR gun typing) tags itself 'gun'; only the USB bridge sends
+    // real reader names (desk / gate1 / gate2).
+    const fromGun = reader === 'gun' || !reader
+
+    // TEST MODE: echo the read, charge nobody. No dedup — tap as often as you like.
+    if (testingRef.current) {
+      const c = normalizeCode(code)
+      const m = resolveMemberLocal(code, membersRef.current)
+      feedback(true)
+      setTestLog((l) => [{
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        time: new Date(),
+        source: fromGun ? '⌨ QR gun / keyboard' : `🔌 USB · ${reader}`,
+        raw: code,
+        code: c,
+        match: m ? { name: m.name, credits: m.credits || 0 } : null,
+        isTestQr: c === 'TEST-QR-OK',
+      }, ...l].slice(0, 20))
+      return
+    }
+
+    const gate = fromGun ? 'desk' : reader
     const key = `${gate}:${code}`
     const now = Date.now()
     if (recent.current.get(key) && now - recent.current.get(key) < 3500) return
@@ -202,7 +231,7 @@ export default function Reception({ viewOnly = false }) {
     const v = el.value.trim()
     el.value = ''
     if (v.length >= 3) {
-      onCode(normalizeCode(v), 'desk')
+      onCode(normalizeCode(v), 'gun')
     } else if (v.length > 0) {
       // Garbled / partial burst — still SHOW it, never swallow a read silently.
       setLastRead(new Date())
@@ -327,6 +356,7 @@ export default function Reception({ viewOnly = false }) {
               </div>
               <button className="btn primary small" onClick={() => { setPanel('renewal'); setSearch('') }}>💳 Renewal</button>
               <button className="btn ghost small" onClick={() => { setPanel('find'); setSearch('') }}>🔍 Find member</button>
+              <button className="btn ghost small" onClick={() => { setTesting(true); setTestLog([]) }}>🧪 Test readers</button>
               {session && <button className="btn danger small" onClick={stopDay} disabled={ending}>End session</button>}
               <button className="btn ghost small" onClick={() => setDeviceOpen(true)} title="Name this device — it appears on every payment in the activity log">
                 🖥 {device}
@@ -463,6 +493,52 @@ export default function Reception({ viewOnly = false }) {
             <p className="muted small" style={{ margin: '10px 0 0' }}>
               Stored on this device only — each desk gets its own name.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Reader test — slides over the board; taps echo here, nobody charged */}
+      {testing && !viewOnly && (
+        <div className="manual-panel">
+          <div className="manual-head">
+            <span className="strong">🧪 Reader test — nothing is saved, nobody is charged</span>
+            <button className="btn primary small" onClick={() => setTesting(false)}>Done — back to entries</button>
+          </div>
+
+          <div className="row gap wrap" style={{ marginBottom: 10 }}>
+            <span className={`tag ${winFocused ? 'ok' : 'pending'}`}>
+              {winFocused ? '✓ Window focused — gun can type' : '✗ CLICK THIS WINDOW first'}
+            </span>
+            <span className={`tag ${bridgeUp ? 'ok' : 'pending'}`}>
+              {bridgeUp ? '✓ USB card reader connected' : '✗ USB bridge off (start_pcsc.bat) — NFC taps won\'t arrive'}
+            </span>
+          </div>
+
+          <div className="row gap wrap" style={{ alignItems: 'center' }}>
+            <div className="qrwrap" style={{ margin: 0 }}>
+              <QRCodeCanvas value="TEST-QR-OK" size={280} level="M" includeMargin style={{ width: 132, height: 132 }} />
+            </div>
+            <div className="muted small" style={{ flex: 1, minWidth: 200 }}>
+              <b>1.</b> Scan this square with the QR gun → a ✓ row must appear below.<br />
+              <b>2.</b> Tap any card on the NFC reader → a row shows its number (and the member, if assigned).<br />
+              <b>3.</b> Tap the same things as many times as you like — test mode never charges.
+            </div>
+          </div>
+
+          <div className="manual-list" style={{ marginTop: 12 }}>
+            {testLog.length === 0 && <div className="muted small">Waiting for a scan or tap…</div>}
+            {testLog.map((r) => (
+              <div key={r.id} className="manual-row" style={{ cursor: 'default' }}>
+                <span className="avatar-fallback sm">{r.isTestQr ? '🎯' : r.match ? '✓' : '?'}</span>
+                <span className="manual-name" style={{ flex: 1, minWidth: 0 }}>
+                  {r.isTestQr ? 'TEST QR read — gun works ✓' : r.match ? `${r.match.name} · ${r.match.credits} cr` : 'No member match'}
+                  <span className="muted small" style={{ display: 'block', wordBreak: 'break-all' }}>
+                    {r.source} · {r.raw.length} chars · {r.code.length > 40 ? `${r.code.slice(0, 40)}…` : r.code}
+                  </span>
+                </span>
+                <span className="muted small">{r.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
