@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
+import { signInAnonymously, sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
 import { CURRENCY, TIERS, PACK_CREDITS, packPrice } from '../config'
@@ -22,48 +22,52 @@ import {
 } from '../lib/db'
 
 // The owner's ONE page. Four tabs: Today · People · Money · Print.
-// Owner email login only — staff never need this page.
+// Open to anyone with the shared password (typed once per device); the owner's
+// email login (if signed in) walks straight in.
+const OWNER_PASSWORD = 'QWERT1234'
+
 export default function Owner() {
   const { user, loading, logout, isSuper } = useAuth()
+  const [ok, setOk] = useState(() => localStorage.getItem('owner_pass') === OWNER_PASSWORD)
+
+  // The device needs a silent identity so the database accepts it.
+  useEffect(() => {
+    if (loading || user) return
+    signInAnonymously(auth).catch(() => {})
+  }, [loading, user])
+
   if (loading) return <div className="center muted">Loading…</div>
-  if (!user || user.isAnonymous) return <OwnerLogin />
-  if (!isSuper) {
-    return (
-      <div className="center">
-        <div className="card narrow center-text">
-          <h3>Owner only</h3>
-          <p className="muted">You're signed in as {user.email}. This page is for the owner's account.</p>
-          <button className="btn block" onClick={logout}>Log out</button>
-        </div>
-      </div>
-    )
-  }
-  return <OwnerHub logout={logout} />
+  if (isSuper || ok) return <OwnerHub logout={isSuper ? logout : null} />
+  return <OwnerPassGate onOk={() => setOk(true)} />
 }
 
-function OwnerLogin() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+function OwnerPassGate({ onOk }) {
+  const [input, setInput] = useState('')
   const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-  async function submit(e) {
+  function submit(e) {
     e.preventDefault()
-    setErr('')
-    setBusy(true)
-    try { await signInWithEmailAndPassword(auth, email.trim(), password) }
-    catch (er) { setErr(er.message); setBusy(false) }
+    if (input.trim().toUpperCase() === OWNER_PASSWORD) {
+      localStorage.setItem('owner_pass', OWNER_PASSWORD)
+      onOk()
+    } else {
+      setErr('Wrong password.')
+      setInput('')
+    }
   }
   return (
     <div className="center">
-      <form className="card narrow" onSubmit={submit}>
+      <form className="card narrow center-text" onSubmit={submit}>
         <div className="brand"><span className="leaf">🌿</span> Owner</div>
-        <p className="muted">Owner login only.</p>
-        <label>Email</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <label>Password</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <p className="muted">Enter the owner password. This device will remember it.</p>
+        <input
+          type="password"
+          autoFocus
+          placeholder="Password"
+          value={input}
+          onChange={(e) => { setErr(''); setInput(e.target.value) }}
+        />
         {err && <div className="error">{err}</div>}
-        <button className="btn primary block" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
+        <button className="btn primary block" type="submit" disabled={!input.trim()}>Open</button>
       </form>
     </div>
   )
@@ -87,7 +91,7 @@ function OwnerHub({ logout }) {
           <Link className="btn ghost small" to="/owner/month">📄 Month report</Link>
           <Link className="btn ghost small" to="/owner/followup">💬 Follow-up</Link>
           <Link className="btn ghost small" to="/admin">🖥 Reception</Link>
-          <button className="btn ghost small" onClick={logout}>Log out</button>
+          {logout && <button className="btn ghost small" onClick={logout}>Log out</button>}
         </div>
       </header>
 

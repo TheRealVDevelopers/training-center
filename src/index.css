@@ -734,6 +734,14 @@ a:hover { text-decoration: underline; }
 
 /* ---- Rebuild: reception & owner ---- */
 
+/* Big unmissable warning when the reception window lost focus (a QR gun types
+   keystrokes — a background window hears nothing). */
+.gfeed-focuswarn {
+  margin: 10px 14px 0; padding: 16px 18px; border-radius: var(--r-sm); cursor: pointer;
+  background: #c0392b; color: #fff; font-weight: 800; font-size: 16px; text-align: center;
+  animation: nocreditPulse 1.2s ease-in-out infinite;
+}
+
 /* Straight-line board view: same rows, compact one-liners. Toggle in header. */
 .gfeed-list.lines { gap: 4px; }
 .gfeed-list.lines .gfeed-row { padding: 6px 12px; border-radius: 8px; gap: 10px; }

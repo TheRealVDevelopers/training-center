@@ -11,15 +11,21 @@ import { normalizeCode } from './readerId'
 const BRIDGE_BASE = 'http://127.0.0.1:47113'
 const BRIDGE = `${BRIDGE_BASE}/tap`
 
-export function useLocalReader(onTap) {
+export function useLocalReader(onTap, onStatus) {
   const cb = useRef(onTap)
   cb.current = onTap
+  const st = useRef(onStatus)
+  st.current = onStatus
   const lastSeq = useRef(null)
 
   useEffect(() => {
     let stopped = false
     let timer = null
     let fails = 0
+    let up = null // null=unknown, then true/false — report only on change
+    const report = (ok) => {
+      if (up !== ok) { up = ok; st.current?.(ok) }
+    }
     // Fast poll (120ms) while the bridge answers; if it's not running, back off
     // to every 4s so the console isn't flooded with connection-refused errors.
     async function poll() {
@@ -29,6 +35,7 @@ export function useLocalReader(onTap) {
         const r = await fetch(BRIDGE, { cache: 'no-store' })
         const d = await r.json()
         fails = 0
+        report(true)
         if (lastSeq.current === null) {
           lastSeq.current = d.seq // ignore whatever was already there on load
         } else if (d.seq > lastSeq.current) {
@@ -37,6 +44,7 @@ export function useLocalReader(onTap) {
         }
       } catch {
         fails += 1
+        if (fails > 3) report(false)
         delay = fails > 3 ? 4000 : 120 // bridge not running — slow down
       }
       if (!stopped) timer = setTimeout(poll, delay)

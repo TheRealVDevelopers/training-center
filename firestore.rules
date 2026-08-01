@@ -36,7 +36,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['name', 'mobile', 'clubName', 'city', 'years', 'photoURL', 'memberToken']))
         || staffOrOwner();
-      allow delete: if isOwner();
+      allow delete: if staffOrOwner(); // owner page opens by shared password
     }
 
     match /entries/{entryId} {
@@ -55,7 +55,7 @@ service cloud.firestore {
         || (signedIn() && resource.data.memberId == request.auth.uid);
       allow create: if staffOrOwner();
       allow update: if false;          // history is never edited
-      allow delete: if isOwner();      // delete-a-mistake, owner only
+      allow delete: if staffOrOwner(); // delete-a-mistake (owner page = shared password)
     }
 
     match /sessions/{sessionId} {
@@ -72,7 +72,7 @@ service cloud.firestore {
 
     match /settings/{docId} {
       allow read: if staffOrOwner();
-      allow write: if isOwner();
+      allow write: if staffOrOwner(); // PIN is set from the shared-password owner page
     }
 
     // Legacy booking-era data: owner can still read history; nothing writes.

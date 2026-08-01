@@ -55,6 +55,21 @@ export default function Reception({ viewOnly = false }) {
     setViewMode(v)
     localStorage.setItem('board_view', v)
   }
+  // Self-diagnosis: is the USB bridge alive, when did a read last REACH this
+  // page, and does the window actually have focus (a QR gun types keystrokes —
+  // if another window is focused, the gun beeps but the board hears nothing).
+  const [bridgeUp, setBridgeUp] = useState(null)
+  const [lastRead, setLastRead] = useState(null)
+  const [winFocused, setWinFocused] = useState(true)
+  useEffect(() => {
+    if (viewOnly) return undefined
+    const check = () => setWinFocused(document.hasFocus())
+    check()
+    const id = setInterval(check, 700)
+    window.addEventListener('focus', check)
+    window.addEventListener('blur', check)
+    return () => { clearInterval(id); window.removeEventListener('focus', check); window.removeEventListener('blur', check) }
+  }, [viewOnly])
 
   const membersRef = useRef([])
   const sessionRef = useRef(null)
@@ -99,6 +114,7 @@ export default function Reception({ viewOnly = false }) {
 
   async function onCode(code, reader) {
     if (!code || viewOnly) return
+    setLastRead(new Date()) // proof on screen that the read reached the app
     const gate = reader || 'desk'
     const key = `${gate}:${code}`
     const now = Date.now()
@@ -165,7 +181,7 @@ export default function Reception({ viewOnly = false }) {
     }
   }
   useCardWedge(onCode, !viewOnly)
-  useLocalReader(viewOnly ? () => {} : onCode)
+  useLocalReader(viewOnly ? () => {} : onCode, viewOnly ? undefined : setBridgeUp)
 
   // Hidden always-focused input so a keyboard-style QR gun never types into
   // the wrong place.
@@ -185,7 +201,14 @@ export default function Reception({ viewOnly = false }) {
     if (!el) return
     const v = el.value.trim()
     el.value = ''
-    if (v.length >= 3) onCode(normalizeCode(v), 'desk')
+    if (v.length >= 3) {
+      onCode(normalizeCode(v), 'desk')
+    } else if (v.length > 0) {
+      // Garbled / partial burst — still SHOW it, never swallow a read silently.
+      setLastRead(new Date())
+      feedback(false)
+      pushLocal({ ok: false, kind: 'badread', memberId: '', name: '', photoURL: '', mobile: '', credits: 0, gate: 'desk' })
+    }
   }
 
   // ---- Derived numbers -----------------------------------------------------
@@ -228,6 +251,7 @@ export default function Reception({ viewOnly = false }) {
     notin: 'Was not inside',
     low: 'NO CREDITS — call them over',
     notreg: 'Card not registered — search their name below',
+    badread: 'Couldn’t read that — tap / scan again slowly',
   }
 
   async function manualCheckIn(m) {
@@ -276,6 +300,11 @@ export default function Reception({ viewOnly = false }) {
           <div className="gfeed-sub">
             {session ? '🟢 Session live' : '⏳ Starts with the first tap'}
             {!viewOnly && <span className="scan-ready"> · 🔴 Reader armed</span>}
+            {!viewOnly && bridgeUp === true && <span className="scan-ready"> · 🔌 USB reader ✓</span>}
+            {!viewOnly && bridgeUp === false && <span className="muted"> · USB bridge off</span>}
+            {!viewOnly && lastRead && (
+              <span className="muted"> · last read {lastRead.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            )}
           </div>
         </div>
         <div className="gfeed-stats">
@@ -307,6 +336,12 @@ export default function Reception({ viewOnly = false }) {
           )}
         </div>
       </header>
+
+      {!viewOnly && !winFocused && (
+        <div className="gfeed-focuswarn" onClick={() => { window.focus(); catcher.current?.focus() }}>
+          ⚠ READERS CAN'T REACH THIS SCREEN — another window is selected. Click anywhere here, then tap again.
+        </div>
+      )}
 
       {!viewOnly && mode === 'out' && (
         <div className="gfeed-startbanner">↑ OUT mode — taps now mark people as LEFT (never charges). Switch back to In for entries.</div>
