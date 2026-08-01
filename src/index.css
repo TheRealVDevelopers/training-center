@@ -733,6 +733,21 @@ a:hover { text-decoration: underline; }
 .gfm-link:hover { text-decoration: underline; }
 
 /* ---- Rebuild: reception & owner ---- */
+
+/* Straight-line board view: same rows, compact one-liners. Toggle in header. */
+.gfeed-list.lines { gap: 4px; }
+.gfeed-list.lines .gfeed-row { padding: 6px 12px; border-radius: 8px; gap: 10px; }
+.gfeed-list.lines .gfeed-mark { font-size: 17px; width: 20px; }
+.gfeed-list.lines .gfeed-face { width: 26px; height: 26px; }
+.gfeed-list.lines .gfeed-face.fb { font-size: 13px; }
+.gfeed-list.lines .gfeed-body { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.gfeed-list.lines .gfeed-name { font-size: 15px; flex: none; max-width: 40%; }
+.gfeed-list.lines .gfeed-line { font-size: 12.5px; margin-top: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gfeed-list.lines .gfeed-meta { display: flex; align-items: center; gap: 10px; }
+.gfeed-list.lines .gfeed-cr { font-size: 13px; }
+.gfeed-list.lines .gfeed-time { font-size: 10.5px; }
+.gfeed-list.lines .gfeed-recharge, .gfeed-list.lines .gfeed-guest { padding: 5px 10px; font-size: 11.5px; }
+.gfeed-list.lines .gfeed-row.nocredit { animation: rise 0.3s ease both; } /* no pulse in dense view */
 .seg.inout button.on.out { background: var(--danger); color: #fff; }
 .gfeed .seg { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16); }
 .gfeed .seg button { color: #d8e4dc; }

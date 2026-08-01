@@ -48,6 +48,13 @@ export default function Reception({ viewOnly = false }) {
   const [ending, setEnding] = useState(false)
   const [deviceOpen, setDeviceOpen] = useState(false)
   const [device, setDevice] = useState(() => getDeviceLabel())
+  // Board style: 'cards' (default) or 'lines' (compact straight-line rows).
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('board_view') || 'cards')
+  function toggleView() {
+    const v = viewMode === 'cards' ? 'lines' : 'cards'
+    setViewMode(v)
+    localStorage.setItem('board_view', v)
+  }
 
   const membersRef = useRef([])
   const sessionRef = useRef(null)
@@ -195,9 +202,16 @@ export default function Reception({ viewOnly = false }) {
   const entryByMember = useMemo(() => Object.fromEntries(entries.map((e) => [e.memberId, e])), [entries])
 
   // Board rows: optimistic local rows first, then the cloud feed (deduped).
+  // ONLY today's rows — every new day the board starts at zero; yesterday's
+  // taps never linger on screen.
   const rows = useMemo(() => {
+    const dayStart = new Date()
+    dayStart.setHours(0, 0, 0, 0)
+    const s = dayStart.getTime() / 1000
     const localKeys = new Set(localRows.map((r) => `${r.memberId}:${r.kind}`))
-    const cloud = events.filter((e) => !(e.memberId && localKeys.has(`${e.memberId}:${e.kind}`) && (Date.now() - (e.at?.seconds || 0) * 1000) < 8000))
+    const cloud = events
+      .filter((e) => !e.at || e.at.seconds >= s)
+      .filter((e) => !(e.memberId && localKeys.has(`${e.memberId}:${e.kind}`) && (Date.now() - (e.at?.seconds || 0) * 1000) < 8000))
     return [...localRows, ...cloud]
   }, [localRows, events])
 
@@ -266,6 +280,9 @@ export default function Reception({ viewOnly = false }) {
         </div>
         <div className="gfeed-stats">
           <ThemeToggle />
+          <button className="btn ghost small" onClick={toggleView} title="Switch board style">
+            {viewMode === 'cards' ? '≡ Line view' : '▤ Card view'}
+          </button>
           <div className="gfeed-count"><b>{inside}</b><span>inside</span></div>
           <div className="gfeed-count"><b>{today}</b><span>today</span></div>
           {!viewOnly && (
@@ -295,7 +312,7 @@ export default function Reception({ viewOnly = false }) {
         <div className="gfeed-startbanner">↑ OUT mode — taps now mark people as LEFT (never charges). Switch back to In for entries.</div>
       )}
 
-      <div className="gfeed-list">
+      <div className={`gfeed-list ${viewMode === 'lines' ? 'lines' : ''}`}>
         {rows.length === 0 && (
           <div className="gfeed-empty">Entries appear here the moment someone taps their card or shows their QR.</div>
         )}
