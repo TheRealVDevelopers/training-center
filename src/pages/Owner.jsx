@@ -133,6 +133,25 @@ function TodayTab({ members }) {
   const upi = payToday.filter((p) => p.method === 'upi').reduce((n, p) => n + (p.amount || 0), 0)
   const lowCount = members.filter((m) => (m.credits || 0) < 1).length
 
+  // Level-wise breakdown of TODAY's entries — the end-of-day report line:
+  // how many Supervisor / GET TEAM / Millionaire / Presidents Team came.
+  const levelWise = useMemo(() => {
+    const byId = Object.fromEntries(members.map((m) => [m.id, m]))
+    const counts = {}
+    let guests = 0
+    for (const e of entries) {
+      guests += e.guests || 0
+      const t = byId[e.memberId]?.tier || 'No level set'
+      counts[t] = (counts[t] || 0) + 1
+    }
+    const order = [...Object.keys(TIERS), 'No level set']
+    return {
+      rows: order.filter((t) => counts[t]).map((t) => ({ tier: t, count: counts[t] })),
+      membersCount: entries.length,
+      guests,
+    }
+  }, [entries, members])
+
   async function savePin() {
     if (pin.length !== 4) return
     await setStaffPin(pin)
@@ -149,6 +168,30 @@ function TodayTab({ members }) {
         <div className="mstat"><div className="mstat-val">{CURRENCY}{cash + upi}</div><div className="mstat-lbl">Collected today</div></div>
         <div className="mstat"><div className="mstat-val" style={{ color: lowCount ? 'var(--danger)' : undefined }}>{lowCount}</div><div className="mstat-lbl">Zero credits</div></div>
       </section>
+
+      {/* Level-wise: who came today, by level — the end-of-day report */}
+      <div className="card">
+        <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ margin: 0 }}>🏆 Level-wise today</h3>
+          <span className="muted small">
+            <b>{levelWise.membersCount}</b> member{levelWise.membersCount === 1 ? '' : 's'}
+            {levelWise.guests ? <> + <b>{levelWise.guests}</b> guest{levelWise.guests === 1 ? '' : 's'}</> : null}
+            {' '}· <b>{today}</b> total people
+          </span>
+        </div>
+        {levelWise.rows.length === 0 ? (
+          <div className="muted small" style={{ marginTop: 8 }}>No entries yet — fills in as people tap in.</div>
+        ) : (
+          <div className="an-pay" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+            {levelWise.rows.map((r) => (
+              <div className="an-pay-cell" key={r.tier}>
+                <span className="an-pay-lbl">{r.tier}</span>
+                <span className="an-pay-val">{r.count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="card">
         <div className="row between"><h3 style={{ margin: 0 }}>💰 Today's money</h3><span className="muted small">{payToday.length} recharge{payToday.length === 1 ? '' : 's'}</span></div>
