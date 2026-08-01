@@ -464,6 +464,7 @@ function PrintTab({ members }) {
           <Link className="btn big" to="/owner/activity">Activity log — who took the money ›</Link>
           <Link className="btn big" to="/admin/cards" target="_blank">Card tracking — printed / given ›</Link>
           <Link className="btn big" to="/admin/testcard" target="_blank">Printer test page ›</Link>
+          <Link className="btn big" to="/admin/test" target="_blank">📡 Reader test (QR gun + NFC) ›</Link>
           <Link className="btn big" to="/door" target="_blank">Door QR screen ›</Link>
           <Link className="btn big" to="/signup" target="_blank">Signup page (share) ›</Link>
           <Link className="btn big" to="/poster" target="_blank">Signup poster (print / WhatsApp) ›</Link>

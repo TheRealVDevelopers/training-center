@@ -11,6 +11,7 @@ import Owner from './pages/Owner'
 import Door from './pages/Door'
 import CardStudio from './pages/CardStudio'
 import TestCard from './pages/TestCard'
+import ReaderTest from './pages/ReaderTest'
 import Poster from './pages/Poster'
 import CardTrack from './pages/CardTrack'
 import OwnerOnly from './components/OwnerOnly'
@@ -37,6 +38,7 @@ export default function App() {
       <Route path="/admin" element={<PinGate label="Reception"><Reception /></PinGate>} />
       <Route path="/admin/print" element={<PinGate label="Card Studio"><CardStudio /></PinGate>} />
       <Route path="/admin/testcard" element={<PinGate label="Printer test"><TestCard /></PinGate>} />
+      <Route path="/admin/test" element={<PinGate label="Reader test"><ReaderTest /></PinGate>} />
       <Route path="/admin/cards" element={<PinGate label="Card Tracking"><CardTrack /></PinGate>} />
 
       {/* Owner — email login */}
