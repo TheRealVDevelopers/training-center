@@ -1,25 +1,53 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { signInAnonymously } from 'firebase/auth'
+import { auth } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
+import { OWNER_PASSWORD } from '../pages/Owner'
 
-// Owner-only guard for the report pages. Anything showing one member's history
-// or the club's money lives behind this — staff pages may LINK here, but the
-// owner's email login is what opens it.
+// Guard for the report pages (member history, money, attendance). It uses the
+// SAME shared owner password as /owner — unlocked once per device — so opening
+// a report from the Owner page never asks again. The owner's email login, if
+// signed in, walks straight through.
 export default function OwnerOnly({ children }) {
-  const { user, loading, isSuper, logout } = useAuth()
-  if (loading) return <div className="center muted">Loading…</div>
-  if (!user || user.isAnonymous || !isSuper) {
-    return (
-      <div className="center">
-        <div className="card narrow center-text">
-          <div className="brand"><span className="leaf">🌿</span> Owner only</div>
-          <p className="muted">This page shows member history and money. Log in with the owner account.</p>
-          <Link className="btn primary block" to="/owner">Go to Owner login</Link>
-          {user && !user.isAnonymous && <button className="btn block" onClick={logout}>Log out</button>}
-        </div>
-      </div>
-    )
+  const { user, loading, isSuper } = useAuth()
+  const [ok, setOk] = useState(() => localStorage.getItem('owner_pass') === OWNER_PASSWORD)
+  const [input, setInput] = useState('')
+  const [err, setErr] = useState('')
+
+  // The device needs a silent identity so the database accepts its reads.
+  useEffect(() => {
+    if (loading || user) return
+    signInAnonymously(auth).catch(() => {})
+  }, [loading, user])
+
+  if (loading || !user) return <div className="center muted">Loading…</div>
+  if (isSuper || ok) return children
+
+  function submit(e) {
+    e.preventDefault()
+    if (input.trim().toUpperCase() === OWNER_PASSWORD) {
+      localStorage.setItem('owner_pass', OWNER_PASSWORD)
+      setOk(true)
+    } else {
+      setErr('Wrong password.')
+      setInput('')
+    }
   }
-  return children
+
+  return (
+    <div className="center">
+      <form className="card narrow center-text" onSubmit={submit}>
+        <div className="brand"><span className="leaf">🌿</span> Owner</div>
+        <p className="muted">This page shows member history and money. Enter the owner password — this device will remember it.</p>
+        <input
+          type="password" autoFocus placeholder="Password" value={input}
+          onChange={(e) => { setErr(''); setInput(e.target.value) }}
+        />
+        {err && <div className="error">{err}</div>}
+        <button className="btn primary block" type="submit" disabled={!input.trim()}>Open</button>
+      </form>
+    </div>
+  )
 }
 
 // Shared helper: a WhatsApp deep link for an Indian mobile number.

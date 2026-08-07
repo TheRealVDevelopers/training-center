@@ -24,7 +24,7 @@ import {
 // The owner's ONE page. Four tabs: Today · People · Money · Print.
 // Open to anyone with the shared password (typed once per device); the owner's
 // email login (if signed in) walks straight in.
-const OWNER_PASSWORD = 'QWERT1234'
+export const OWNER_PASSWORD = 'QWERT1234'
 
 export default function Owner() {
   const { user, loading, logout, isSuper } = useAuth()
