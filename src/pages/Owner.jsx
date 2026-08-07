@@ -87,6 +87,7 @@ function OwnerHub({ logout }) {
         </div>
         <div className="row gap">
           <ThemeToggle />
+          <Link className="btn primary small" to={`/owner/session/${todayKey()}`}>🧾 End of day</Link>
           <Link className="btn ghost small" to="/owner/matrix">📊 Attendance</Link>
           <Link className="btn ghost small" to="/owner/month">📄 Month report</Link>
           <Link className="btn ghost small" to="/owner/followup">💬 Follow-up</Link>
@@ -516,6 +517,13 @@ function PrintTab({ members }) {
       </div>
     </>
   )
+}
+
+// Today's session key — the end-of-day report is always "today" by default.
+function todayKey() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
 function fmtT(ts) {

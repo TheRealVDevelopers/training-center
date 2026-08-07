@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { CURRENCY } from '../config'
+import { CURRENCY, TIERS } from '../config'
 import { subscribeMembers, subscribeSessionEntries, subscribeAllPayments } from '../lib/db'
 import { eligibleSessions } from '../lib/attendance'
 import { waLink } from '../components/OwnerOnly'
@@ -55,8 +55,21 @@ export default function SessionReport() {
   )
   const cash = dayPayments.filter((p) => p.method === 'cash').reduce((n, p) => n + (p.amount || 0), 0)
   const upi = dayPayments.filter((p) => p.method === 'upi').reduce((n, p) => n + (p.amount || 0), 0)
+  const creditsSold = dayPayments.reduce((n, p) => n + (p.credits || 0), 0)
   const guests = entries.reduce((n, e) => n + (e.guests || 0), 0)
   const headcount = entries.length + guests
+  const memberById = useMemo(() => Object.fromEntries(members.map((m) => [m.id, m])), [members])
+  // The level a member was ON THE DAY is stamped on the entry; fall back to
+  // their profile for older rows written before that field existed.
+  const tierOf = (e) => e.tier || memberById[e.memberId]?.tier || 'No level set'
+
+  // Level-wise split of who walked in — the headline of the end-of-day report.
+  const byTier = useMemo(() => {
+    const counts = {}
+    entries.forEach((e) => { const t = tierOf(e); counts[t] = (counts[t] || 0) + 1 })
+    const order = [...Object.keys(TIERS), 'No level set']
+    return order.filter((t) => counts[t]).map((t) => ({ tier: t, count: counts[t] }))
+  }, [entries, memberById]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Arrivals by 15-minute bucket — answers "when do we need staff at the door".
   const buckets = useMemo(() => {
@@ -88,27 +101,71 @@ export default function SessionReport() {
     <div className="page wide">
       <header className="topbar no-print">
         <div>
-          <div className="brand"><span className="leaf">🌿</span>{fmtDay(date)}</div>
+          <div className="brand"><span className="leaf">🌿</span>End of day</div>
           <div className="muted small">
-            Opened {fmtTime(session.startedAt)}{session.endedAt ? ` · closed ${fmtTime(session.endedAt)}` : ' · still open'}
+            {fmtDay(date)} · Opened {fmtTime(session.startedAt)}{session.endedAt ? ` · closed ${fmtTime(session.endedAt)}` : ' · still open'}
           </div>
         </div>
         <div className="row gap">
           <ThemeToggle />
           <button className="btn ghost small" onClick={() => window.print()}>🖨 Print</button>
-          <button className="btn ghost small" onClick={() => exportCsv(attended, absent, date)}>⬇ CSV</button>
+          <button className="btn ghost small" onClick={() => exportCsv({ date, entries: attended, absent, payments: dayPayments, byTier, memberById, cash, upi, guests, creditsSold })}>⬇ CSV</button>
           <Link className="btn ghost small" to="/owner">‹ Owner</Link>
         </div>
       </header>
 
-      <div className="print-title">🌿 Saturday Training — {fmtDay(date)}</div>
+      <div className="print-title">🌿 Saturday Training — End of day<br /><span>{fmtDay(date)}</span></div>
 
       <section className="mstats">
-        <div className="mstat"><div className="mstat-val">{headcount}</div><div className="mstat-lbl">People in</div></div>
-        <div className="mstat"><div className="mstat-val">{absent.length}</div><div className="mstat-lbl">Did not come</div></div>
+        <div className="mstat"><div className="mstat-val">{entries.length}</div><div className="mstat-lbl">Members checked in</div></div>
         <div className="mstat"><div className="mstat-val">{guests}</div><div className="mstat-lbl">Guests</div></div>
+        <div className="mstat"><div className="mstat-val">{headcount}</div><div className="mstat-lbl">Total people</div></div>
         <div className="mstat"><div className="mstat-val">{CURRENCY}{cash + upi}</div><div className="mstat-lbl">Collected</div></div>
       </section>
+
+      {/* Money — the number the drawer is counted against */}
+      <div className="card">
+        <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ margin: 0 }}>💰 Money collected</h3>
+          <span className="muted small">{dayPayments.length} renewal{dayPayments.length === 1 ? '' : 's'} · {creditsSold} credits sold</span>
+        </div>
+        <div className="an-pay">
+          <div className="an-pay-cell"><span className="an-pay-lbl">💵 Cash</span><span className="an-pay-val">{CURRENCY}{cash}</span></div>
+          <div className="an-pay-cell"><span className="an-pay-lbl">📲 UPI</span><span className="an-pay-val">{CURRENCY}{upi}</span></div>
+          <div className="an-pay-cell total"><span className="an-pay-lbl">Total</span><span className="an-pay-val">{CURRENCY}{cash + upi}</span></div>
+        </div>
+        <div className="recon-note">
+          💡 <b>Cash in the drawer should be {CURRENCY}{cash}.</b> Count it before closing — UPI ({CURRENCY}{upi}) lands in the bank.
+        </div>
+      </div>
+
+      {/* Level-wise: how many of each level walked in today */}
+      <div className="card">
+        <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ margin: 0 }}>🏆 Level-wise attendance</h3>
+          <span className="muted small">{entries.length} member{entries.length === 1 ? '' : 's'}</span>
+        </div>
+        {byTier.length === 0 ? (
+          <div className="muted small" style={{ marginTop: 8 }}>Nobody checked in.</div>
+        ) : (
+          <div style={{ marginTop: 10 }}>
+            {byTier.map((r) => (
+              <div key={r.tier} className="lvl-row">
+                <span className="lvl-name">{r.tier}</span>
+                <span className="lvl-bar"><span style={{ width: `${(r.count / entries.length) * 100}%` }} /></span>
+                <b className="lvl-n">{r.count}</b>
+              </div>
+            ))}
+            {guests > 0 && (
+              <div className="lvl-row">
+                <span className="lvl-name muted">Guests (brought along)</span>
+                <span className="lvl-bar" />
+                <b className="lvl-n">{guests}</b>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {buckets.length > 0 && (
         <div className="card">
@@ -178,24 +235,53 @@ export default function SessionReport() {
 
       {tab === 'money' && (
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Money on this day</h3>
-          <div className="an-pay">
-            <div className="an-pay-cell"><span className="an-pay-lbl">💵 Cash</span><span className="an-pay-val">{CURRENCY}{cash}</span></div>
-            <div className="an-pay-cell"><span className="an-pay-lbl">📲 UPI</span><span className="an-pay-val">{CURRENCY}{upi}</span></div>
-            <div className="an-pay-cell total"><span className="an-pay-lbl">Total</span><span className="an-pay-val">{CURRENCY}{cash + upi}</span></div>
+          <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <h3 style={{ margin: 0 }}>Who paid today</h3>
+            <span className="muted small">name · level · club · method — every renewal taken</span>
           </div>
-          <div style={{ marginTop: 12 }}>
-            {dayPayments.length === 0 && <div className="muted small">No recharges on this day.</div>}
-            {dayPayments.map((p) => (
-              <div key={p.id} className="hist-row">
-                <span className={`method-pill ${p.method || 'other'}`}>{(p.method || '—').toUpperCase()}</span>
-                <div className="hist-body">
-                  <div className="hist-title">{members.find((m) => m.id === p.memberId)?.name || 'Member'} · +{p.credits ?? 0} cr</div>
-                  <div className="muted small">{fmtTime(p.createdAt)}{p.ref ? ` · ${p.ref}` : ''}</div>
-                </div>
-                <b className="pos">+{CURRENCY}{p.amount}</b>
-              </div>
-            ))}
+          <div className="rp-tablewrap">
+            <table className="rp-table">
+              <thead>
+                <tr>
+                  <th>Time</th><th>Member</th><th>Level</th><th>Club</th>
+                  <th className="num">Credits</th><th className="num">Amount</th><th>Method</th><th>Taken by</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dayPayments.map((p) => {
+                  const m = memberById[p.memberId]
+                  return (
+                    <tr key={p.id}>
+                      <td>{fmtTime(p.createdAt)}</td>
+                      <td>
+                        {p.memberId
+                          ? <Link to={`/owner/member/${p.memberId}`}>{p.memberName || m?.name || 'Member'}</Link>
+                          : (p.memberName || 'Member')}
+                        {m?.couple ? ' 👫' : ''}
+                      </td>
+                      <td className="muted">{m?.tier || '—'}</td>
+                      <td className="muted">{m?.clubName || '—'}</td>
+                      <td className="num">+{p.credits ?? 0}</td>
+                      <td className="num"><b>{CURRENCY}{p.amount || 0}</b></td>
+                      <td><span className={`method-pill ${p.method || 'other'}`}>{(p.method || '—').toUpperCase()}</span>
+                        {p.ref ? <div className="muted small">{p.ref}</div> : null}</td>
+                      <td className="muted">{p.by?.label || '—'}</td>
+                    </tr>
+                  )
+                })}
+                {dayPayments.length === 0 && <tr><td colSpan={8} className="muted">No renewals taken on this day.</td></tr>}
+              </tbody>
+              {dayPayments.length > 0 && (
+                <tfoot>
+                  <tr>
+                    <th colSpan={4}>Total</th>
+                    <th className="num">{creditsSold}</th>
+                    <th className="num">{CURRENCY}{cash + upi}</th>
+                    <th colSpan={2} className="muted">💵 {CURRENCY}{cash} · 📲 {CURRENCY}{upi}</th>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
           </div>
         </div>
       )}
@@ -216,14 +302,47 @@ export default function SessionReport() {
   )
 }
 
-function exportCsv(attended, absent, date) {
-  const rows = [['status', 'name', 'in', 'out', 'guests', 'gate']]
-  attended.forEach((e) => rows.push(['came', e.name || '', fmtTime(e.at), e.exitedAt ? fmtTime(e.exitedAt) : '', e.guests || 0, e.gate || '']))
-  absent.forEach((m) => rows.push(['absent', m.name || '', '', '', '', '']))
-  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+// One CSV that holds the whole day: the summary, the level split, every
+// payment with the payer's details, and who came / didn't.
+function exportCsv({ date, entries, absent, payments, byTier, memberById, cash, upi, guests, creditsSold }) {
+  const rows = []
+  rows.push([`END OF DAY — ${date}`])
+  rows.push([])
+  rows.push(['SUMMARY'])
+  rows.push(['Members checked in', entries.length])
+  rows.push(['Guests', guests])
+  rows.push(['Total people', entries.length + guests])
+  rows.push(['Did not come', absent.length])
+  rows.push(['Cash', cash], ['UPI', upi], ['Total collected', cash + upi], ['Credits sold', creditsSold])
+  rows.push([])
+  rows.push(['LEVEL-WISE ATTENDANCE'])
+  byTier.forEach((r) => rows.push([r.tier, r.count]))
+  rows.push([])
+  rows.push(['PAYMENTS'])
+  rows.push(['Time', 'Member', 'Level', 'Club', 'Mobile', 'Credits', 'Amount', 'Method', 'Reference', 'Taken by'])
+  payments.forEach((p) => {
+    const m = memberById[p.memberId] || {}
+    rows.push([
+      fmtTime(p.createdAt), p.memberName || m.name || '', m.tier || '', m.clubName || '', m.mobile || '',
+      p.credits ?? 0, p.amount ?? 0, p.method || '', p.ref || '', p.by?.label || '',
+    ])
+  })
+  rows.push([])
+  rows.push(['CHECKED IN'])
+  rows.push(['Name', 'Level', 'Club', 'In', 'Out', 'Guests'])
+  entries.forEach((e) => {
+    const m = memberById[e.memberId] || {}
+    rows.push([e.name || '', e.tier || m.tier || '', m.clubName || '', fmtTime(e.at), e.exitedAt ? fmtTime(e.exitedAt) : '', e.guests || 0])
+  })
+  rows.push([])
+  rows.push(['DID NOT COME'])
+  rows.push(['Name', 'Level', 'Club', 'Mobile', 'Credits left'])
+  absent.forEach((m) => rows.push([m.name || '', m.tier || '', m.clubName || '', m.mobile || '', m.credits || 0]))
+
+  const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-  a.download = `session-${date}.csv`
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
+  a.download = `end-of-day-${date}.csv`
   a.click()
 }
 
