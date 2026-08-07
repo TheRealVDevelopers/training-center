@@ -370,9 +370,11 @@ function PersonRow({ m, open, onToggle }) {
             </select>
             <button className="btn small primary" onClick={doRecharge}>Recharge</button>
             <span className="row gap" style={{ marginLeft: 'auto' }}>
-              <input inputMode="numeric" placeholder="±cr" value={adj} onChange={(e) => setAdj(e.target.value.replace(/\D/g, ''))} style={{ width: 64 }} />
-              <button className="btn small" onClick={() => doAdjust(1)}>+</button>
-              <button className="btn small" onClick={() => doAdjust(-1)}>−</button>
+              <span className="muted small" style={{ alignSelf: 'center' }}>Correct credits:</span>
+              <input inputMode="numeric" placeholder="how many" value={adj}
+                onChange={(e) => setAdj(e.target.value.replace(/\D/g, ''))} style={{ width: 90 }} />
+              <button className="btn small" disabled={!adj} onClick={() => doAdjust(1)} title="Add this many credits">＋ Add</button>
+              <button className="btn small danger" disabled={!adj} onClick={() => doAdjust(-1)} title="Take away this many credits">− Remove</button>
             </span>
           </div>
 

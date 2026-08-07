@@ -355,7 +355,7 @@ export default function Reception({ viewOnly = false }) {
                 <button className={mode === 'out' ? 'on out' : ''} onClick={() => setMode('out')}>↑ Out</button>
               </div>
               <button className="btn primary small" onClick={() => { setPanel('renewal'); setSearch('') }}>💳 Renewal</button>
-              <button className="btn ghost small" onClick={() => { setPanel('find'); setSearch('') }}>🔍 Find member</button>
+              <button className="btn ghost small" onClick={() => { setPanel('find'); setSearch('') }}>✓ Mark attendance</button>
               <button className="btn ghost small" onClick={() => { setTesting(true); setTestLog([]) }}>🧪 Test readers</button>
               {session && <button className="btn danger small" onClick={stopDay} disabled={ending}>End session</button>}
               <button className="btn ghost small" onClick={() => setDeviceOpen(true)} title="Name this device — it appears on every payment in the activity log">
@@ -421,10 +421,10 @@ export default function Reception({ viewOnly = false }) {
       {panel && !viewOnly && (
         <div className="manual-panel">
           <div className="manual-head">
-            <span className="strong">{panel === 'renewal' ? '💳 Renewal — pick the member' : 'Find member'}</span>
+            <span className="strong">{panel === 'renewal' ? '💳 Renewal — pick the member' : '✓ Mark attendance — no card needed'}</span>
             <button className="btn ghost small" onClick={() => { setPanel(false); setSearch('') }}>Close</button>
           </div>
-          <input autoFocus placeholder="Name or mobile…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input autoFocus placeholder="Type their name…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <div className="manual-list">
             {matches.map((m) => {
               const e = entryByMember[m.id]
@@ -450,7 +450,7 @@ export default function Reception({ viewOnly = false }) {
                   </span>
                   <span className="row gap">
                     {(!e || e.exitedAt) && (
-                      <button className="btn small primary" disabled={busyId === m.id} onClick={() => manualCheckIn(m)}>Check in</button>
+                      <button className="btn small primary" disabled={busyId === m.id} onClick={() => manualCheckIn(m)} title="Mark them present without a card — same as a tap">✓ Mark attendance</button>
                     )}
                     <button className="btn small" onClick={() => { setPanel(false); setRecharge(m) }}>Recharge</button>
                     <AssignCardButton member={m} all={members} />
