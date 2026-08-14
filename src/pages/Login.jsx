@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
+import InstallApp from '../components/InstallApp'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -41,6 +42,8 @@ export default function Login() {
 
   return (
     <div className="center">
+      <div className="narrow-stack">
+        <InstallApp />
       <form className="card narrow" onSubmit={submit}>
         <div className="brand" style={{ marginBottom: 12 }}><span className="leaf">🌿</span>Saturday Training</div>
         <p className="muted">Log in to your account</p>
@@ -64,6 +67,7 @@ export default function Login() {
           <a href="#forgot" onClick={(e) => { e.preventDefault(); forgot() }}>Forgot password?</a>
         </p>
       </form>
+      </div>
     </div>
   )
 }

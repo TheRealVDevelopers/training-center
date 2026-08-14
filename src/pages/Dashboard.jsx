@@ -7,6 +7,7 @@ import { subscribeMemberHistory, ensureMemberToken, subscribeMemberEntries, subs
 import { attendanceOf } from '../lib/attendance'
 import { squarePhoto } from '../lib/photo'
 import ThemeToggle from '../components/ThemeToggle'
+import InstallApp from '../components/InstallApp'
 
 // The member's page: their card, their credits, their pass. Nothing else.
 export default function Dashboard() {
@@ -82,6 +83,9 @@ export default function Dashboard() {
           <button className="btn ghost small" onClick={logout}>Log out</button>
         </div>
       </header>
+
+      {/* Top of the page, as asked: one tap → home-screen app */}
+      <InstallApp />
 
       {/* The card */}
       <section className="hero memcard">
