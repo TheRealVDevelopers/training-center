@@ -18,6 +18,7 @@ import {
   addGuest,
   recharge,
   assignCard,
+  adjustCredits,
   logScanEvent,
 } from '../lib/db'
 import { useWakeLock } from '../lib/wakeLock'
@@ -43,6 +44,8 @@ export default function Reception({ viewOnly = false }) {
   const [localRows, setLocalRows] = useState([]) // optimistic rows, instant
   const [mode, setMode] = useState('in') // 'in' | 'out'
   const [rechargeFor, setRecharge] = useState(null) // member | null
+  const [creditsFor, setCreditsFor] = useState(null) // member | null — fix a balance
+  const [assignUid, setAssignUid] = useState('') // unknown card waiting for an owner
   const [panel, setPanel] = useState(false) // false | 'find' | 'renewal'
   const [search, setSearch] = useState('')
   const [busyId, setBusyId] = useState('')
@@ -82,6 +85,7 @@ export default function Reception({ viewOnly = false }) {
   const sessionRef = useRef(null)
   const entriesRef = useRef([])
   const modeRef = useRef('in')
+  const assignRef = useRef('')
   const recent = useRef(new Map())
   const catcher = useRef(null)
   const flushTimer = useRef(null)
@@ -101,6 +105,7 @@ export default function Reception({ viewOnly = false }) {
   useEffect(() => { sessionRef.current = session }, [session])
   useEffect(() => { entriesRef.current = entries }, [entries])
   useEffect(() => { modeRef.current = mode }, [mode])
+  useEffect(() => { assignRef.current = assignUid }, [assignUid])
   useEffect(() => {
     if (viewOnly) return undefined
     const prime = () => primeAudio()
@@ -173,14 +178,24 @@ export default function Reception({ viewOnly = false }) {
       mobile: cached?.mobile || '',
       creditsBefore: cached?.credits ?? null,
       credits: verdict.kind === 'welcome' ? (cached.credits || 1) - 1 : cached?.credits || 0,
+      code: verdict.kind === 'notreg' ? normalizeCode(code) : '',
       gate,
     })
+
+    // An unknown card just touched the reader and its owner is standing right
+    // there. Ask who it belongs to NOW — type the name, assign, tap again.
+    if (verdict.kind === 'notreg' && !assignRef.current) {
+      setAssignUid(normalizeCode(code))
+      setPanel(false)
+    }
 
     // 2) The cloud confirms in the background (authoritative, race-safe).
     try {
       const member = cached || (await resolveMember(code, membersRef.current))
       if (!member) {
-        logScanEvent({ ok: false, kind: 'notreg', memberId: '', name: '', photoURL: '', mobile: '', credits: 0, gate })
+        // Keep the card number on the event so "💳 Whose card?" still works
+        // from the red row even minutes later (tap at the gate, walk to desk).
+        logScanEvent({ ok: false, kind: 'notreg', memberId: '', name: '', photoURL: '', mobile: '', credits: 0, code: normalizeCode(code), gate })
         dropLocal(localId)
         return
       }
@@ -218,13 +233,13 @@ export default function Reception({ viewOnly = false }) {
     if (viewOnly) return undefined
     const grab = () => {
       const el = catcher.current
-      if (el && document.activeElement !== el && !rechargeFor && !panel) el.focus()
+      if (el && document.activeElement !== el && !rechargeFor && !panel && !assignUid && !creditsFor) el.focus()
     }
     grab()
     const id = setInterval(grab, 400)
     window.addEventListener('focus', grab)
     return () => { clearInterval(id); window.removeEventListener('focus', grab) }
-  }, [viewOnly, rechargeFor, panel])
+  }, [viewOnly, rechargeFor, panel, assignUid, creditsFor])
   function flushCatcher() {
     const el = catcher.current
     if (!el) return
@@ -279,7 +294,7 @@ export default function Reception({ viewOnly = false }) {
     left: 'Left · marked out',
     notin: 'Was not inside',
     low: 'NO CREDITS — call them over',
-    notreg: 'Card not registered — search their name below',
+    notreg: 'Unknown card — say whose it is, then tap again',
     badread: 'Couldn’t read that — tap / scan again slowly',
   }
 
@@ -313,7 +328,7 @@ export default function Reception({ viewOnly = false }) {
   }
 
   return (
-    <div className="gfeed" onClick={() => !viewOnly && !rechargeFor && !panel && catcher.current?.focus()}>
+    <div className="gfeed" onClick={() => !viewOnly && !rechargeFor && !panel && !assignUid && !creditsFor && catcher.current?.focus()}>
       {!viewOnly && (
         <input
           ref={catcher} className="scan-catcher" inputMode="none" autoFocus autoComplete="off"
@@ -398,7 +413,9 @@ export default function Reception({ viewOnly = false }) {
                 <div className="gfeed-line">{lineFor[e.kind] || e.kind}{e.mobile ? ` · ${e.mobile}` : ''}</div>
               </div>
               <div className="gfeed-meta">
-                {canRecharge ? (
+                {!viewOnly && e.kind === 'notreg' && e.code ? (
+                  <button className="gfeed-recharge" onClick={() => setAssignUid(e.code)}>💳 Whose card?</button>
+                ) : canRecharge ? (
                   <button className="gfeed-recharge" onClick={() => setRecharge(memberById[e.memberId] || e)}>🎟️ Recharge</button>
                 ) : canGuest ? (
                   <button className="gfeed-guest" disabled={busyId === e.memberId} onClick={() => guestFor(e.memberId)}>+ Guest</button>
@@ -453,6 +470,7 @@ export default function Reception({ viewOnly = false }) {
                       <button className="btn small primary" disabled={busyId === m.id} onClick={() => manualCheckIn(m)} title="Mark them present without a card — same as a tap">✓ Mark attendance</button>
                     )}
                     <button className="btn small" onClick={() => { setPanel(false); setRecharge(m) }}>Recharge</button>
+                    <button className="btn small" onClick={() => { setPanel(false); setCreditsFor(m) }} title="Fix a wrong balance — no money involved">✎ Credits</button>
                     <AssignCardButton member={m} all={members} />
                   </span>
                 </div>
@@ -543,9 +561,197 @@ export default function Reception({ viewOnly = false }) {
         </div>
       )}
 
+      {assignUid && !viewOnly && (
+        <AssignOwnerPanel
+          uid={assignUid}
+          members={members}
+          busyId={busyId}
+          onClose={() => setAssignUid('')}
+          onCheckIn={async (m) => { await manualCheckIn(m); setAssignUid('') }}
+          onCredits={(m) => { setAssignUid(''); setCreditsFor(m) }}
+        />
+      )}
+
+      {creditsFor && !viewOnly && (
+        <CreditsPanel member={memberById[creditsFor.id] || creditsFor} onClose={() => setCreditsFor(null)} />
+      )}
+
       {rechargeFor && !viewOnly && (
         <RechargePanel member={rechargeFor} onClose={() => setRecharge(null)} />
       )}
+    </div>
+  )
+}
+
+// An unknown card just touched the reader — and the person holding it is
+// standing right there. This is the whole fix: type their name, tap the row,
+// the card is theirs. Then they tap again and walk in.
+function AssignOwnerPanel({ uid, members, busyId, onClose, onCheckIn, onCredits }) {
+  const [q, setQ] = useState('')
+  const [busy, setBusy] = useState('')
+  const [err, setErr] = useState('')
+  const [done, setDone] = useState(null) // { member, movedFrom, already }
+  const t = q.trim().toLowerCase()
+  const matches = t
+    ? members.filter((m) => (m.name || '').toLowerCase().includes(t) || (m.mobile || '').includes(t)).slice(0, 8)
+    : []
+  // A hardware UID is short hex; anything longer is a QR/token payload.
+  const pretty = /^[0-9A-F]{4,14}$/.test(uid) ? uid.replace(/(.{2})/g, '$1 ').trim() : uid
+
+  async function give(m) {
+    setBusy(m.id); setErr('')
+    try {
+      const r = await assignCard(m.id, uid, members)
+      feedback(true)
+      setDone({ member: m, movedFrom: r.movedFrom, already: r.already })
+    } catch (e) {
+      setErr(e.message || 'Could not save — try once more')
+      feedback(false)
+    } finally { setBusy('') }
+  }
+
+  return (
+    <div className="recharge-overlay" onClick={onClose}>
+      <div className="recharge-panel wide" onClick={(e) => e.stopPropagation()}>
+        {done ? (
+          <>
+            <div className="asg-hit">
+              <div className="asg-hit-tick">✓</div>
+              <div>
+                <div className="recharge-name">
+                  {done.already ? 'Already their card' : 'Card given to'} {done.member.name}
+                </div>
+                <div className="muted small">
+                  {done.movedFrom
+                    ? `Taken off ${done.movedFrom} and moved here.`
+                    : 'Ask them to tap again now — it will go green.'}
+                </div>
+              </div>
+            </div>
+            <div className="row gap wrap" style={{ marginTop: 12 }}>
+              <button className="btn primary" disabled={busyId === done.member.id} onClick={() => onCheckIn(done.member)}>
+                ✓ Mark them in now
+              </button>
+              <button className="btn" onClick={() => onCredits(done.member)}>
+                ✎ Credits ({done.member.credits || 0})
+              </button>
+              <button className="btn ghost" onClick={onClose}>Done</button>
+            </div>
+            <p className="muted small" style={{ margin: '10px 0 0' }}>
+              Or just hand the card back — the next tap works straight away.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="recharge-head">
+              <span className="avatar-fallback">💳</span>
+              <div>
+                <div className="recharge-name">Whose card is this?</div>
+                <div className="muted small">Card {pretty} — nobody owns it yet. Type their name.</div>
+              </div>
+              <button className="btn ghost small" onClick={onClose}>✕</button>
+            </div>
+            <input
+              autoFocus placeholder="Type their name…" value={q}
+              onChange={(e) => { setErr(''); setQ(e.target.value) }}
+            />
+            {err && <div className="error">{err}</div>}
+            <div className="manual-list" style={{ marginTop: 8 }}>
+              {matches.map((m) => (
+                <button key={m.id} className="manual-row" disabled={!!busy} onClick={() => give(m)}>
+                  {m.photoURL ? <img src={m.photoURL} alt="" /> : <span className="avatar-fallback sm">{(m.name || '?')[0]}</span>}
+                  <span className="manual-name">
+                    {m.name}{m.couple ? ' 👫' : ''}
+                    <span className="muted small">
+                      {' · '}{m.tier || 'Associate'} · {m.credits || 0} cr
+                      {m.cardUid ? ' · has a card already' : ''}
+                    </span>
+                  </span>
+                  <span className="asg-go">{busy === m.id ? 'Saving…' : 'This is them ›'}</span>
+                </button>
+              ))}
+              {t && matches.length === 0 && <div className="muted small">Nobody matches “{q}”.</div>}
+              {!t && <div className="muted small">Start typing — the name list appears here.</div>}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Fix a wrong balance on the spot. Set it to an exact number, or nudge it up
+// and down. Every change lands in the ledger with a note, so the day's money
+// still adds up at close.
+function CreditsPanel({ member, onClose }) {
+  const [bal, setBal] = useState(member.credits || 0)
+  const [exact, setExact] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  async function apply(delta, note) {
+    if (!delta || busy) return
+    setBusy(true); setMsg('')
+    try {
+      const now = await adjustCredits(member.id, delta, note)
+      setBal(now)
+      setExact('')
+      setMsg(`✓ ${member.name.split(' ')[0]} now has ${now} credit${now === 1 ? '' : 's'}`)
+      feedback(true)
+    } catch (e) {
+      setMsg(e.message || 'Could not save')
+      feedback(false)
+    } finally { setBusy(false) }
+  }
+
+  const want = exact === '' ? null : Number(exact)
+  const diff = want == null ? 0 : want - bal
+
+  return (
+    <div className="recharge-overlay" onClick={onClose}>
+      <div className="recharge-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="recharge-head">
+          {member.photoURL ? <img src={member.photoURL} alt="" /> : <span className="avatar-fallback">{(member.name || '?')[0]}</span>}
+          <div>
+            <div className="recharge-name">✎ {member.name}</div>
+            <div className="muted small">{member.tier || 'Associate'} · fixing the credit balance</div>
+          </div>
+          <button className="btn ghost small" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="cr-big">{bal}<span className="muted small"> credit{bal === 1 ? '' : 's'} now</span></div>
+
+        <div className="recharge-credits">
+          {[-5, -1, 1, 5].map((d) => (
+            <button
+              key={d} className={`amt-chip ${d < 0 ? 'minus' : ''}`} disabled={busy || (d < 0 && bal <= 0)}
+              onClick={() => apply(d, d < 0 ? 'Reception correction — removed' : 'Reception correction — added')}
+            >
+              {d > 0 ? `＋${d}` : `−${Math.abs(d)}`}
+            </button>
+          ))}
+        </div>
+
+        <label style={{ marginTop: 10 }}>Or set it to exactly</label>
+        <div className="row gap">
+          <input
+            inputMode="numeric" placeholder="e.g. 5" value={exact} style={{ width: 110 }}
+            onChange={(e) => setExact(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={(e) => { if (e.key === 'Enter' && diff) apply(diff, `Reception correction — set to ${want}`) }}
+          />
+          <button
+            className="btn primary" disabled={busy || want == null || diff === 0}
+            onClick={() => apply(diff, `Reception correction — set to ${want}`)}
+          >
+            {want == null || diff === 0 ? 'Set' : `Set to ${want} (${diff > 0 ? '+' : ''}${diff})`}
+          </button>
+        </div>
+
+        {msg && <div className="banner" style={{ marginTop: 10 }}>{msg}</div>}
+        <p className="muted small" style={{ margin: '10px 0 0' }}>
+          This does not take money. For a paid renewal use 💳 Renewal instead — that one goes on the day's takings.
+        </p>
+      </div>
     </div>
   )
 }
