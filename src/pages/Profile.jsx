@@ -4,6 +4,7 @@ import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 
 import { auth } from '../firebase'
 import { useAuth } from '../auth/AuthContext'
 import { uploadPhoto, updateMemberProfile } from '../lib/db'
+import { squarePhoto } from '../lib/photo'
 
 // Member self-service: photo, contact details, password. The level (pricing)
 // is set by the owner, not here.
@@ -33,7 +34,8 @@ export default function Profile() {
     setSaving(true)
     try {
       const data = { name: name.trim(), mobile: mobile.trim(), clubName: clubName.trim(), city: city.trim() }
-      if (photo) data.photoURL = await uploadPhoto(`members/${member.id}/profile.jpg`, photo)
+      // Same square-crop + shrink as everywhere else, so the grids stay uniform.
+      if (photo) data.photoURL = await uploadPhoto(`members/${member.id}/profile.jpg`, await squarePhoto(photo))
       await updateMemberProfile(member.id, data)
       setPhoto(null)
       setSaveMsg('Saved ✓')

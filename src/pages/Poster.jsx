@@ -27,8 +27,8 @@ export default function Poster() {
         <ol className="poster-steps">
           {photo ? (
             <>
-              <li><b>Scan the code</b> — it opens your own page.</li>
-              <li><b>Log in</b> — your email, password <b>123456</b>.</li>
+              <li><b>Scan the code</b> — it opens your own page. Already logged in? Skip to step 3.</li>
+              <li><b>Log in</b> — your email + the password you chose. Registered for you at the desk? It's <b>123456</b>.</li>
               <li><b>Tap "Add your photo"</b> — pick one from your gallery. Done!</li>
             </>
           ) : (
