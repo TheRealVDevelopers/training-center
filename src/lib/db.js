@@ -113,28 +113,65 @@ export async function ensureMemberToken(member) {
   return token
 }
 
+// How many cards a member is entitled to: a couple carries one each.
+export const cardsAllowed = (m) => (m?.couple ? 2 : 1)
+
 // Link a physical card to a member. A couple needs TWO cards (one each), so
 // UIDs live in an array; `cardUid` is kept in sync as the first one for older
 // code paths. Assigning a card that already belongs to someone else moves it.
+//
+// The member's existing cards are read INSIDE a transaction rather than from
+// the caller's cache. Handing a couple their two cards back to back is faster
+// than a snapshot round-trip, and a stale read used to overwrite the first
+// card with the second — the couple walked away with one working card.
 export async function assignCard(memberId, cardUid, membersCache = []) {
   const uid = normalizeCode(cardUid)
-  const max = 2
 
   // Take the card off whoever had it before — a UID can only be in one place.
-  const prev = membersCache.find(
-    (m) => m.id !== memberId && (m.cardUid === uid || (m.cardUids || []).includes(uid)),
-  )
-  if (prev) {
+  // The SERVER is asked, not just this device's cache: assigning the same card
+  // on two desks used to leave it on both members, and then whoever tapped it
+  // checked in as whichever record happened to be found first.
+  const holders = new Map()
+  for (const m of membersCache) {
+    if (m.id !== memberId && (m.cardUid === uid || (m.cardUids || []).includes(uid))) holders.set(m.id, m)
+  }
+  try {
+    const [arr, single] = await Promise.all([
+      getDocs(query(collection(db, 'members'), where('cardUids', 'array-contains', uid))),
+      getDocs(query(collection(db, 'members'), where('cardUid', '==', uid))),
+    ])
+    for (const d of [...arr.docs, ...single.docs]) {
+      if (d.id !== memberId) holders.set(d.id, { id: d.id, ...d.data() })
+    }
+  } catch { /* offline — the cache above is the best we have */ }
+  for (const prev of holders.values()) {
     const left = (prev.cardUids || [prev.cardUid]).filter((u) => u && u !== uid)
     await updateDoc(doc(db, 'members', prev.id), { cardUids: left, cardUid: left[0] || null })
   }
+  const prev = holders.values().next().value || null
 
-  const me = membersCache.find((m) => m.id === memberId)
-  const current = (me?.cardUids || (me?.cardUid ? [me.cardUid] : [])).filter(Boolean)
-  if (current.includes(uid)) return { already: true, uids: current }
-  const next = [...current, uid].slice(-max) // keep the newest, cap at 2
-  await updateDoc(doc(db, 'members', memberId), { cardUids: next, cardUid: next[0] })
-  return { already: false, uids: next, movedFrom: prev?.name || null }
+  return runTransaction(db, async (tx) => {
+    const ref = doc(db, 'members', memberId)
+    const snap = await tx.get(ref)
+    if (!snap.exists()) throw new Error('Member not found')
+    const me = snap.data()
+    const max = cardsAllowed(me)
+    const current = (me.cardUids || (me.cardUid ? [me.cardUid] : [])).filter(Boolean)
+    if (current.includes(uid)) return { already: true, uids: current, max, name: me.name || '' }
+    // Over the limit, the OLDEST card falls off — that's the lost one being
+    // replaced, and it must stop opening the door the moment the new one works.
+    const all = [...current, uid]
+    const next = all.slice(-max)
+    tx.update(ref, { cardUids: next, cardUid: next[0] })
+    return {
+      already: false,
+      uids: next,
+      dropped: all.slice(0, all.length - next.length),
+      max,
+      name: me.name || '',
+      movedFrom: prev?.name || null,
+    }
+  })
 }
 
 // Take a card off a member (lost / wrongly assigned).

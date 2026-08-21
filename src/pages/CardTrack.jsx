@@ -36,6 +36,23 @@ export default function CardTrack() {
     }
   }, [members])
 
+  // Health check. Two faults are invisible until someone taps at the door and
+  // the wrong name lights up, so they get named here instead:
+  //   · the SAME card sitting on two members — one of them checks in as the other
+  //   · a single member holding two cards — usually a replacement where the
+  //     lost card was never taken off, so the lost one still opens the door
+  const problems = useMemo(() => {
+    const byUid = new Map()
+    for (const m of members) for (const u of uidsOf(m)) {
+      if (!byUid.has(u)) byUid.set(u, [])
+      byUid.get(u).push(m)
+    }
+    return {
+      shared: [...byUid.entries()].filter(([, ms]) => ms.length > 1).map(([uid, ms]) => ({ uid, ms })),
+      extra: members.filter((m) => !m.couple && uidsOf(m).length > 1),
+    }
+  }, [members])
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase()
     return members
@@ -81,6 +98,62 @@ export default function CardTrack() {
         <div className="mstat"><div className="mstat-val">{totals.assigned}</div><div className="mstat-lbl">Assigned</div></div>
         <div className="mstat"><div className="mstat-val">{totals.given}</div><div className="mstat-lbl">Given out</div></div>
       </section>
+
+      {(problems.shared.length > 0 || problems.extra.length > 0) && (
+        <section className="card ctk-problems">
+          <div className="strong">⚠ Card problems to sort out</div>
+
+          {problems.shared.map(({ uid, ms }) => (
+            <div key={uid} className="ctk-prob">
+              <div>
+                <b>Card {uid}</b> is on <b>{ms.length} different people</b>: {ms.map((m) => m.name).join(' · ')}.
+                <div className="muted small">Whoever taps it checks in as only one of them. Keep it for the real owner.</div>
+              </div>
+              <div className="row gap wrap">
+                {ms.map((m) => (
+                  <button
+                    key={m.id} className="btn small"
+                    title={`Leave ${uid} with ${m.name} and take it off the others`}
+                    onClick={() => {
+                      if (!window.confirm(`Keep card ${uid} for ${m.name}?\n\nIt will be taken off: ${ms.filter((o) => o.id !== m.id).map((o) => o.name).join(', ')}`)) return
+                      ms.filter((o) => o.id !== m.id).forEach((o) => unassignCard(o, uid).catch(() => {}))
+                    }}
+                  >
+                    Keep for {(m.name || '').split(' ').slice(0, 2).join(' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {problems.extra.map((m) => (
+            <div key={m.id} className="ctk-prob">
+              <div>
+                <b>{m.name}</b> is not marked as a couple but holds {uidsOf(m).length} cards ({uidsOf(m).join(', ')}).
+                <div className="muted small">
+                  If they are a couple, tick 👫 so the app expects two. If one is a replacement, drop the old one — it still opens the door today.
+                </div>
+              </div>
+              <div className="row gap wrap">
+                <button
+                  className="btn small" title="Mark as a couple — two cards is then correct"
+                  onClick={() => updateMemberProfile(m.id, { couple: true }).catch(() => {})}
+                >
+                  👫 They're a couple
+                </button>
+                {uidsOf(m).map((u) => (
+                  <button
+                    key={u} className="btn small danger"
+                    onClick={() => { if (window.confirm(`Stop card ${u} from working for ${m.name}?`)) unassignCard(m, u).catch(() => {}) }}
+                  >
+                    Drop {u}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       <div className="row gap" style={{ margin: '4px 0 12px', flexWrap: 'wrap' }}>
         <input placeholder="Search name or mobile…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1, minWidth: 200 }} />

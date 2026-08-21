@@ -711,6 +711,11 @@ a:hover { text-decoration: underline; }
 .gfeed-menu a { padding: 10px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; color: var(--ink); text-decoration: none; }
 .gfeed-menu a:hover { background: var(--surface-2); }
 
+/* Card Tracking — the health-check block */
+.ctk-problems { border-color: rgba(255, 170, 90, 0.45); background: rgba(255, 150, 60, 0.07); display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.ctk-prob { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; }
+.ctk-prob > div:first-child { flex: 1; min-width: 240px; }
+
 /* "Get the mobile app" — home-screen install nudge */
 .install-strip { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; margin-bottom: 12px; border-radius: var(--r-md); border: 1.5px solid var(--line-2); background: linear-gradient(120deg, rgba(38, 120, 72, 0.18), rgba(20, 60, 38, 0.10)); color: var(--ink); cursor: pointer; font-family: inherit; }
 .install-strip:hover { border-color: var(--brand); }

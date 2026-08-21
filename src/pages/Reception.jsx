@@ -18,6 +18,7 @@ import {
   addGuest,
   recharge,
   assignCard,
+  cardsAllowed,
   adjustCredits,
   logScanEvent,
 } from '../lib/db'
@@ -603,7 +604,7 @@ function AssignOwnerPanel({ uid, members, busyId, onClose, onCheckIn, onCredits 
     try {
       const r = await assignCard(m.id, uid, members)
       feedback(true)
-      setDone({ member: m, movedFrom: r.movedFrom, already: r.already })
+      setDone({ member: m, ...r })
     } catch (e) {
       setErr(e.message || 'Could not save — try once more')
       feedback(false)
@@ -623,9 +624,17 @@ function AssignOwnerPanel({ uid, members, busyId, onClose, onCheckIn, onCredits 
                 </div>
                 <div className="muted small">
                   {done.movedFrom
-                    ? `Taken off ${done.movedFrom} and moved here.`
-                    : 'Ask them to tap again now — it will go green.'}
+                    ? `Taken off ${done.movedFrom} and moved here. `
+                    : 'Ask them to tap again now — it will go green. '}
+                  {/* Couples carry one card each — say how many are live. */}
+                  <b>Now holds {done.uids.length} of {done.max} card{done.max === 1 ? '' : 's'}.</b>
+                  {done.max === 2 && done.uids.length < 2 && ' Tap the second card to add it.'}
                 </div>
+                {done.dropped?.length > 0 && (
+                  <div className="muted small">
+                    Old card {done.dropped.join(', ')} no longer works — replaced by this one.
+                  </div>
+                )}
               </div>
             </div>
             <div className="row gap wrap" style={{ marginTop: 12 }}>
@@ -664,7 +673,8 @@ function AssignOwnerPanel({ uid, members, busyId, onClose, onCheckIn, onCredits 
                     {m.name}{m.couple ? ' 👫' : ''}
                     <span className="muted small">
                       {' · '}{m.tier || 'Associate'} · {m.credits || 0} cr
-                      {m.cardUid ? ' · has a card already' : ''}
+                      {' · '}{cardsHeld(m)}/{cardsAllowed(m)} card{cardsAllowed(m) === 1 ? '' : 's'}
+                      {m.couple ? ' 👫' : ''}
                     </span>
                   </span>
                   <span className="asg-go">{busy === m.id ? 'Saving…' : 'This is them ›'}</span>
@@ -756,6 +766,8 @@ function CreditsPanel({ member, onClose }) {
   )
 }
 
+const cardsHeld = (m) => (m.cardUids || (m.cardUid ? [m.cardUid] : [])).filter(Boolean).length
+
 // First-card assign, right from the desk: press, tap the blank card, done.
 // (For a stack of cards use Card Tracking → Assign cards — tap card, pick name.)
 function AssignCardButton({ member, all = [] }) {
@@ -776,8 +788,16 @@ function AssignCardButton({ member, all = [] }) {
     ck = captureOneCard(finish)
     timer = setTimeout(() => finish(''), 20000)
   }
-  const label = { idle: member.cardUid ? '💳 ✓' : '💳 Assign card', wait: 'Tap card…', done: '✓ Assigned', err: 'Missed — retry' }[state]
-  return <button className="btn small" disabled={state === 'wait'} onClick={arm} title={member.cardUid ? `Card ${member.cardUid} — tap to replace` : 'Assign a card'}>{label}</button>
+  const held = cardsHeld(member)
+  const max = cardsAllowed(member)
+  const label = {
+    idle: held >= max ? `💳 ${held}/${max} ✓` : held ? `💳 add 2nd card` : '💳 Assign card',
+    wait: 'Tap card…', done: '✓ Assigned', err: 'Missed — retry',
+  }[state]
+  const title = held
+    ? `Has ${held} of ${max}: ${(member.cardUids || [member.cardUid]).filter(Boolean).join(', ')}`
+    : 'Assign a card'
+  return <button className="btn small" disabled={state === 'wait'} onClick={arm} title={title}>{label}</button>
 }
 
 // One recharge = packs of PACK_CREDITS, priced by the member's level.
