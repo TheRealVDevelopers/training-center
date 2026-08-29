@@ -50,7 +50,11 @@ CR80 printer; run Chrome with `--kiosk-printing` to skip dialogs.
 3. Owner email in `src/config.js` (`SUPER_ADMIN_EMAILS`) **and** in
    `firestore.rules` (`isOwner()`).
 4. `npm install && npm run dev` · deploy with
-   `npm run build && firebase deploy`.
+   `npm run build && firebase deploy`. A predeploy hook
+   (`scripts/check-build-config.mjs`) aborts the deploy if the bundle was not
+   built against the real config for the project being deployed to — Vite bakes
+   `VITE_FIREBASE_*` in at build time, so a missing `.env` ships a dead app
+   that looks fine on disk.
 5. Set the staff PIN from Owner → Today.
 
 ## Ops scripts (need a service-account key)
