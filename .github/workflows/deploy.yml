@@ -1,0 +1,68 @@
+# Deploy to Firebase Hosting — runnable entirely from a phone.
+#
+# Push to main, or tap Run workflow in the GitHub app / mobile browser.
+# Nothing here depends on a laptop being open.
+#
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#   FIREBASE_SERVICE_ACCOUNT       the whole service-account JSON, pasted as-is
+#   VITE_FIREBASE_API_KEY          \
+#   VITE_FIREBASE_AUTH_DOMAIN      |
+#   VITE_FIREBASE_PROJECT_ID       | the six web-app config values Vite bakes
+#   VITE_FIREBASE_STORAGE_BUCKET   | into the bundle AT BUILD TIME
+#   VITE_FIREBASE_MESSAGING_SENDER_ID
+#   VITE_FIREBASE_APP_ID           /
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Never let two deploys race; let a running one finish rather than shipping half.
+concurrency:
+  group: firebase-hosting-live
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: npm run build
+
+      # The same guard as the local predeploy hook. The deploy action talks to
+      # the Hosting API rather than running `firebase deploy`, so predeploy
+      # hooks do NOT fire here — this step is what stops a bundle built with a
+      # missing or wrong secret from reaching the live site.
+      - name: Verify the built config
+        env:
+          GCLOUD_PROJECT: training-center-registration
+        run: node scripts/check-build-config.mjs
+
+      - name: Deploy
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: training-center-registration
+          channelId: live
