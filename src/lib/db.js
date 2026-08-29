@@ -328,7 +328,7 @@ export async function checkIn(member, session, { gate = 'desk', method = 'card' 
       sessionId: session.id,
       createdAt: serverTimestamp(),
     })
-    return { ok: true, kind: 'welcome', member: m, credits: credits - 1 }
+    return { ok: true, kind: 'welcome', member: m, credits: credits - 1, creditsBefore: credits }
   })
 }
 

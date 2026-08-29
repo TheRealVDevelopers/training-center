@@ -31,6 +31,16 @@ import { getDeviceLabel, setDeviceLabel } from '../lib/actor'
 import ThemeToggle from '../components/ThemeToggle'
 import { QRCodeCanvas } from 'qrcode.react'
 
+// A row keeps one identity from the instant local verdict through to the
+// definitive cloud event, so the credit animation plays once on entry and then
+// simply stays. Safe only for 'welcome': the session id IS the date, so a
+// member gets at most one entry — and one 'welcome' — per day, and the board
+// only ever shows today. Every other kind can legitimately repeat (two taps
+// while inside → two 'already' rows), so those keep their own id.
+function rowKey(e) {
+  return e.kind === 'welcome' && e.memberId ? `w:${e.memberId}` : e.localId || e.id
+}
+
 // THE staff screen. Tap → GREEN in under a heartbeat (verdict comes from the
 // live member list already on this device; the cloud confirms in the
 // background). RED pulses = no credits → one tap recharges. The receptionist
@@ -214,6 +224,9 @@ export default function Reception({ viewOnly = false }) {
         photoURL: m.photoURL || '',
         mobile: m.mobile || '',
         credits: res.credits ?? m.credits ?? 0,
+        // Keep what the entry cost ON the event, so the board still reads
+        // "3 → 2" hours later. null (never undefined) — Firestore rejects it.
+        creditsBefore: res.creditsBefore ?? null,
         gate,
       })
       // Rare: local said green but the cloud disagreed (or vice versa).
@@ -404,7 +417,7 @@ export default function Reception({ viewOnly = false }) {
           const canRecharge = !viewOnly && low && e.memberId
           const couple = e.memberId && memberById[e.memberId]?.couple
           return (
-            <div key={e.localId || e.id} className={`gfeed-row ${e.ok ? 'ok' : low ? 'nocredit' : 'err'}`}>
+            <div key={rowKey(e)} className={`gfeed-row ${e.ok ? 'ok' : low ? 'nocredit' : 'err'}`}>
               <span className="gfeed-mark">{e.ok ? '✓' : '✗'}</span>
               {e.photoURL
                 ? <img className="gfeed-face" src={e.photoURL} alt="" />
@@ -424,7 +437,7 @@ export default function Reception({ viewOnly = false }) {
                   <span className={`gfeed-cr ${e.ok ? '' : 'low'}`}>
                     {/* on a paid entry show what it cost them: 3 → 2 */}
                     {e.kind === 'welcome' && e.creditsBefore != null
-                      ? <><span className="cr-was">{e.creditsBefore}</span> → {e.credits ?? 0} cr</>
+                      ? <><span className="cr-was">{e.creditsBefore}</span> → <span className="cr-now">{e.credits ?? 0}</span> cr</>
                       : <>{e.credits ?? 0} cr</>}
                   </span>
                 )}
